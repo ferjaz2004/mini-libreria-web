@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: mini-libreria-rastreo
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app_web:app
+    plan: free
