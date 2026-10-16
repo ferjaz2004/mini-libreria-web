@@ -12,8 +12,15 @@ def obtener_productos_db():
             cursor = conexion.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='inventario'")
             if cursor.fetchone():
-                # Consultamos únicamente los productos que el admin marcó para mostrar en la web (visible_web = 1)
-                cursor.execute("SELECT id, nombre, precio_venta, stock FROM inventario WHERE visible_web = 1")
+                # Verificamos si la columna visible_web existe para evitar errores
+                cursor.execute("PRAGMA table_info(inventario)")
+                columnas = [info[1] for info in cursor.fetchall()]
+
+                if 'visible_web' in columnas:
+                    cursor.execute("SELECT id, nombre, precio_venta, stock FROM inventario WHERE visible_web = 1")
+                else:
+                    cursor.execute("SELECT id, nombre, precio_venta, stock FROM inventario")
+
                 productos = cursor.fetchall()
                 if productos:
                     return productos
