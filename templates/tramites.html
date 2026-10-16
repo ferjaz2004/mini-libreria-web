@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trámites en Línea - Mini Librería y Servicios</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
+        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .nav-links a { color: #e2e8f0; text-decoration: none; margin-left: 20px; font-weight: 600; font-size: 15px; }
+        .nav-links a:hover { color: #38bdf8; }
+        
+        .header { background: linear-gradient(135deg, #0284c7, #3b82f6); color: white; text-align: center; padding: 40px 20px; }
+        .header h1 { margin: 0; font-size: 26px; }
+        
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .service-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #0284c7; display: flex; flex-direction: column; justify-content: space-between; }
+        .service-card h3 { margin-top: 0; color: #1e293b; font-size: 18px; }
+        .service-price { color: #0284c7; font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .service-desc { color: #64748b; font-size: 14px; margin-bottom: 15px; }
+        
+        .btn-tramite { background-color: #0284c7; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none; display: inline-block; width: 100%; box-sizing: border-box; }
+        .btn-tramite:hover { background-color: #0369a1; }
+
+        /* Estilos del Modal / Formulario de Antecedentes Penales */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-btn { position: absolute; right: 15px; top: 15px; font-size: 20px; font-weight: bold; color: #64748b; cursor: pointer; }
+        .close-btn:hover { color: #ef4444; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #1e293b; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .radio-group { margin-top: 5px; font-size: 14px; }
+        .radio-group label { display: block; margin-bottom: 5px; font-weight: normal; cursor: pointer; }
+
+        footer { background-color: #1e293b; color: #94a3b8; text-align: center; padding: 20px; margin-top: 50px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <!-- Barra de Navegación -->
+    <div class="navbar">
+        <h2>📚 Mini Librería Guatemala</h2>
+        <div class="nav-links">
+            <a href="/">Tienda</a>
+            <a href="/tramites-en-linea">Trámites en Línea</a>
+            <a href="/rastreo">Rastreo de Trámites</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>Centro de Trámites y Servicios Digitales</h1>
+        <p>Solicita tus documentos oficiales de forma rápida, segura y confiable.</p>
+    </div>
+
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 30px; color: #1e293b;">Servicios Disponibles</h2>
+        
+        <div class="services-grid">
+            <!-- Antecedentes Penales (Con Formulario Especial) -->
+            <div class="service-card">
+                <div>
+                    <h3>📋 Antecedentes Penales</h3>
+                    <p class="service-desc">Solicitud y gestión rápida con opción de pago de boleta.</p>
+                </div>
+                <div>
+                    <p class="service-price">Desde Q5.00 de gestión</p>
+                    <button class="btn-tramite" onclick="abrirModalPenales()">Solicitar Trámite</button>
+                </div>
+            </div>
+
+            <!-- Demás servicios generales -->
+            {% for s in servicios if s.nombre != "Antecedentes Penales" %}
+                <div class="service-card">
+                    <div>
+                        <h3>📋 {{ s.nombre }}</h3>
+                        <p class="service-desc">{{ s.desc }}</p>
+                    </div>
+                    <div>
+                        <p class="service-price">Costo: Q{{ "%.2f"|format(s.costo) }}</p>
+                        <a href="https://wa.me/50242001925?text=Hola,%20deseo%20solicitar%20el%20servicio%20de%20{{ s.nombre }}" target="_blank" class="btn-tramite">Solicitar por WhatsApp</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal para Antecedentes Penales -->
+    <div id="modalPenales" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModalPenales()">&times;</span>
+            <h2 style="margin-top: 0; color: #1e293b; font-size: 20px;">Solicitud de Antecedentes Penales</h2>
+            
+            <div class="form-group">
+                <label>Nombre Completo:</label>
+                <input type="text" id="penales-nombre" class="form-control" placeholder="Tus nombres y apellidos...">
+            </div>
+
+            <div class="form-group">
+                <label>Correo Electrónico:</label>
+                <input type="email" id="penales-correo" class="form-control" placeholder="ejemplo@correo.com">
+            </div>
+
+            <div class="form-group">
+                <label>Número de Teléfono:</label>
+                <input type="text" id="penales-telefono" class="form-control" placeholder="Número de contacto...">
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de Nacimiento:</label>
+                <input type="date" id="penales-Nacimiento" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>¿Quién paga la boleta en el banco?</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="tipo-pago-penales" value="nosotros" checked onclick="toggleComprobante()"> Nosotros pagamos la boleta (Costo total: **Q40.00**)</label>
+                    <label><input type="radio" name="tipo-pago-penales" value="cliente" onclick="toggleComprobante()"> Ya he pagado la boleta (Costo de gestión: **Q5.00**)</label>
+                </div>
+            </div>
+
+            <div class="form-group" id="grupo-comprobante" style="display: none;">
+                <label>Adjuntar Boleta (Imagen o PDF):</label>
+                <input type="file" id="penales-archivo" class="form-control" accept="image/*,.pdf">
+                <small style="color: #64748b; font-size: 12px;">Sube la foto o el PDF del comprobante que te generó el banco.</small>
+            </div>
+
+            <button class="btn-tramite" onclick="enviarPenalesWhatsApp()" style="margin-top: 10px;">Enviar Solicitud por WhatsApp</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 Mini Librería y Servicios Guatemala. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        function abrirModalPenales() {
+            document.getElementById("modalPenales").style.display = "flex";
+        }
+
+        function cerrarModalPenales() {
+            document.getElementById("modalPenales").style.display = "none";
+        }
+
+        function toggleComprobante() {
+            let tipoPago = document.querySelector('input[name="tipo-pago-penales"]:checked').value;
+            let grupoComprobante = document.getElementById("grupo-comprobante");
+            if (tipoPago === "cliente") {
+                grupoComprobante.style.display = "block";
+            } else {
+                grupoComprobante.style.display = "none";
+            }
+        }
+
+        function enviarPenalesWhatsApp() {
+            let nombre = document.getElementById("penales-nombre").value.trim();
+            let correo = document.getElementById("penales-correo").value.trim();
+            let telefono = document.getElementById("penales-telefono").value.trim();
+            let nacimiento = document.getElementById("penales-Nacimiento").value;
+            let tipoPago = document.querySelector('input[name="tipo-pago-penales"]:checked').value;
+            let archivoInput = document.getElementById("penales-archivo");
+
+            if (!nombre || !correo || !telefono || !nacimiento) {
+                alert("Por favor completa todos los datos obligatorios del formulario.");
+                return;
+            }
+
+            if (tipoPago === "cliente" && archivoInput.files.length === 0) {
+                alert("Por favor adjunta la boleta de pago (imagen o PDF) que ya pagaste.");
+                return;
+            }
+
+            let mensaje = `Hola, deseo solicitar el trámite de *Antecedentes Penales*:%0A%0A`;
+            mensaje += `*Nombre:* ${nombre}%0A`;
+            mensaje += `*Correo:* ${correo}%0A`;
+            mensaje += `*Teléfono:* ${telefono}%0A`;
+            mensaje += `*Fecha de Nacimiento:* ${nacimiento}%0A`;
+
+            if (tipoPago === "nosotros") {
+                mensaje += `*Modalidad:* Nosotros pagamos la boleta%0A`;
+                mensaje += `*Costo Total:* Q40.00`;
+            } else {
+                let nombreArchivo = archivoInput.files[0] ? archivoInput.files[0].name : "Archivo adjunto";
+                mensaje += `*Modalidad:* Ya he pagado la boleta%0A`;
+                mensaje += `*Boleta Adjunta:* ${nombreArchivo} (Recuerda adjuntar tu archivo en el chat)%0A`;
+                mensaje += `*Costo de Gestión:* Q5.00`;
+            }
+
+            let numeroWhatsApp = "50242001925";
+            let url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`;
+            window.open(url, '_blank');
+            cerrarModalPenales();
+        }
+    </script>
+
+</body>
+</html>
