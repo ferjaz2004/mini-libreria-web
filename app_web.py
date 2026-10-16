@@ -1,32 +1,42 @@
 import os
-import sqlite3
+import requests
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+# --- CREDENCIALES DE SUPABASE (Nube) ---
+SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
+SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
+
 def obtener_productos_db():
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(base_dir, 'mini_libreria.db')
+    url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
     try:
-        with sqlite3.connect(db_path) as conexion:
-            cursor = conexion.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='inventario'")
-            if cursor.fetchone():
-                # Verificamos si la columna visible_web existe para evitar errores
-                cursor.execute("PRAGMA table_info(inventario)")
-                columnas = [info[1] for info in cursor.fetchall()]
-
-                if 'visible_web' in columnas:
-                    cursor.execute("SELECT id, nombre, precio_venta, stock FROM inventario WHERE visible_web = 1")
-                else:
-                    cursor.execute("SELECT id, nombre, precio_venta, stock FROM inventario")
-
-                productos = cursor.fetchall()
-                if productos:
-                    return productos
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            # Filtramos solo los productos visibles en la web (visible_web == 1 o True)
+            productos_visibles = []
+            for p in data:
+                # Comprobamos si visible_web es True / 1 / None (por defecto visibles)
+                vis = p.get("visible_web", 1)
+                if vis == 1 or vis is True:
+                    # Formato: (id, nombre, precio_venta, stock)
+                    productos_visibles.append((
+                        p.get("id"),
+                        p.get("nombre"),
+                        float(p.get("precio_venta", 0.0)),
+                        p.get("stock", 0)
+                    ))
+            if productos_visibles:
+                return productos_visibles
     except Exception as e:
-        print("Error leyendo inventario local:", e)
+        print("Error conectando con Supabase para inventario:", e)
     
+    # Respaldo por si falla el internet en la nube
     return [
         (1, "Cuaderno Universitario 100 Hojas", 15.00, 50),
         (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30),
@@ -35,16 +45,23 @@ def obtener_productos_db():
     ]
 
 def consultar_tramites_por_dpi(dpi):
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(base_dir, 'mini_libreria.db')
-    with sqlite3.connect(db_path) as conexion:
-        cursor = conexion.cursor()
-        cursor.execute("""
-            SELECT id, dpi, nombre_cliente, tipo_tramite, costo, fecha_registro, estado 
-            FROM tramites 
-            WHERE dpi = ?
-        """, (dpi,))
-        return cursor.fetchall()
+    url = f"{SUPABASE_URL}/rest/v1/tramites?dpi=eq.{dpi}&select=id,dpi,nombre_cliente,tipo_tramite,costo,fecha_registro,estado"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            # Convertimos al formato de tuplas que espera la plantilla
+            return [
+                (t.get("id"), t.get("dpi"), t.get("nombre_cliente"), t.get("tipo_tramite"), t.get("costo"), t.get("fecha_registro"), t.get("estado"))
+                for t in data
+            ]
+    except Exception as e:
+        print("Error consultando trámites en Supabase:", e)
+    return []
 
 @app.route("/")
 def index():
