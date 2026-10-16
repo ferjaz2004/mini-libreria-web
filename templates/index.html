@@ -1,48 +1,27 @@
-<script>
-    function enviarPedidoWhatsApp() {
-        if (carrito.length === 0) return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIENDA - Mini Librería y Servicios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center mb-4 text-primary">📦 Catálogo de Productos - Mini Librería</h1>
         
-        let nombreCliente = document.getElementById("input-nombre").value.trim();
-        if (!nombreCliente) {
-            alert("Por favor ingresa tu nombre completo antes de enviar el pedido.");
-            document.getElementById("input-nombre").focus();
-            return;
-        }
-
-        // Calculamos el total exacto con envío incluido
-        let subtotal = 0;
-        carrito.forEach(item => {
-            subtotal += item.precio * item.cantidad;
-        });
-
-        let tipoEntrega = document.querySelector('input[name="entrega"]:checked').value;
-        let costoEnvio = 0.00;
-        if (tipoEntrega === "domicilio") {
-            let selectUbi = document.getElementById("select-ubicacion");
-            if (selectUbi.value !== "alotenango") {
-                costoEnvio = 5.00;
-            }
-        }
-        let totalGeneral = subtotal + costoEnvio;
-
-        // Creamos un formulario temporal dinámico para enviarlo por POST a Flask y Supabase
-        let form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/crear-pedido";
-
-        let inputNombre = document.createElement("input");
-        inputNombre.type = "hidden";
-        inputNombre.name = "nombre";
-        inputNombre.value = nombreCliente;
-        form.appendChild(inputNombre);
-
-        let inputTotal = document.createElement("input");
-        inputTotal.type = "hidden";
-        inputTotal.name = "total_pedido";
-        inputTotal.value = totalGeneral.toFixed(2);
-        form.appendChild(inputTotal);
-
-        document.body.appendChild(form);
-        form.submit();
-    }
-</script>
+        <div class="row">
+            {% for p in productos %}
+            <div class="col-md-4 mb-3">
+                <div class="card shadow-sm p-3">
+                    <h3>{{ p[1] }}</h3>
+                    <p class="text-success fw-bold fs-5">Q{{ "%.2f"|format(p[2]) }}</p>
+                    <p class="text-muted">Stock disponible: {{ p[3] }}</p>
+                    <button class="btn btn-primary" onclick="alert('Producto seleccionado: {{ p[1] }}')">🛒 Comprar</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
