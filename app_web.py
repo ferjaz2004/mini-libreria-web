@@ -1,3 +1,5 @@
+from datetime import datetime
+import json
 import os
 import random
 import requests
@@ -56,9 +58,15 @@ def crear_pedido():
     telefono_cliente = request.form.get("telefono", "Sin teléfono")
     total_pedido = float(request.form.get("total_pedido", 0.0))
 
+    # Recibimos el carrito enviado desde el index.html
+    carrito_json = request.form.get("carrito_productos", "[]")
+    try:
+      carrito_productos = json.loads(carrito_json)
+    except Exception:
+      carrito_productos = []
+
     codigo_pedido = f"PED-{random.randint(1000, 9999)}"
 
-    url_pedidos = f"{SUPABASE_URL}/rest/v1/pedidos"
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -66,21 +74,41 @@ def crear_pedido():
         "Prefer": "return=minimal",
     }
 
-    payload = {
+    # 1. Insertar pedido principal en la tabla 'pedidos'
+    payload_pedido = {
         "codigo_pedido": codigo_pedido,
         "cliente_nombre": nombre_cliente,
         "cliente_telefono": telefono_cliente,
         "total": total_pedido,
         "estado": "PENDIENTE DE PAGO",
     }
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/pedidos", json=payload_pedido, headers=headers
+    )
 
-    requests.post(url_pedidos, json=payload, headers=headers)
+    # 2. Insertar cada producto comprado en la tabla 'detalles_pedido'
+    if carrito_productos:
+      for item in carrito_productos:
+        payload_detalle = {
+            "codigo_pedido": codigo_pedido,
+            "producto_nombre": item.get("nombre", "Producto"),
+            "cantidad": int(item.get("cantidad", 1)),
+            "subtotal": float(item.get("precio", 0.0))
+            * int(item.get("cantidad", 1)),
+        }
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/detalles_pedido",
+            json=payload_detalle,
+            headers=headers,
+        )
 
     mensaje_wa = (
         f"Hola, mi nombre es {nombre_cliente}. Deseo completar el pago de mi"
         f" pedido con código *{codigo_pedido}*. Total: Q{total_pedido:.2f}"
     )
-    link_whatsapp = f"https://wa.me/50242001925?text={requests.utils.quote(mensaje_wa)}"
+    link_whatsapp = (
+        f"https://wa.me/50242001925?text={requests.utils.quote(mensaje_wa)}"
+    )
 
     return f"""
         <!DOCTYPE html>
@@ -98,7 +126,7 @@ def crear_pedido():
                 <p class="mb-4">Total a pagar: <strong class="text-primary">Q{total_pedido:.2f}</strong></p>
                 
                 <div class="alert alert-warning">
-                    Pedido registrado correctamente en nuestro sistema. Haz clic en el botón de abajo para contactarnos vía WhatsApp y completar el pago.
+                    Pedido y detalles registrados correctamente en el sistema. Haz clic en el botón de abajo para contactarnos vía WhatsApp y completar el pago.
                 </div>
                 
                 <a href="{link_whatsapp}" target="_blank" class="btn btn-success btn-lg w-100 mb-3" style="background-color: #25d366; border: none;">
