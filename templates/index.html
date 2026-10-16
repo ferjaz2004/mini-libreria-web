@@ -1,46 +1,48 @@
-function enviarPedidoWhatsApp() {
-            if (carrito.length === 0) return;
-            
-            let nombreCliente = document.getElementById("input-nombre").value.trim();
-            if (!nombreCliente) {
-                alert("Por favor ingresa tu nombre completo antes de enviar el pedido.");
-                document.getElementById("input-nombre").focus();
-                return;
-            }
-
-            // Calculamos el total exacto con envío incluido
-            let subtotal = 0;
-            carrito.forEach(item => {
-                subtotal += item.precio * item.cantidad;
-            });
-
-            let tipoEntrega = document.querySelector('input[name="entrega"]:checked').value;
-            let costoEnvio = 0.00;
-            if (tipoEntrega === "domicilio") {
-                let selectUbi = document.getElementById("select-ubicacion");
-                if (selectUbi.value !== "alotenango") {
-                    costoEnvio = 5.00;
-                }
-            }
-            let totalGeneral = subtotal + costoEnvio;
-
-            // Creamos un formulario temporal dinámico para enviarlo por POST a Flask y Supabase
-            let form = document.createElement("form");
-            form.method = "POST";
-            form.action = "/crear-pedido";
-
-            let inputNombre = document.createElement("input");
-            inputNombre.type = "hidden";
-            inputNombre.name = "nombre";
-            inputNombre.value = nombreCliente;
-            form.appendChild(inputNombre);
-
-            let inputTotal = document.createElement("input");
-            inputTotal.type = "hidden";
-            inputTotal.name = "total_pedido";
-            inputTotal.value = totalGeneral.toFixed(2);
-            form.appendChild(inputTotal);
-
-            document.body.appendChild(form);
-            form.submit();
+<script>
+    function enviarPedidoWhatsApp() {
+        if (carrito.length === 0) return;
+        
+        let nombreCliente = document.getElementById("input-nombre").value.trim();
+        if (!nombreCliente) {
+            alert("Por favor ingresa tu nombre completo antes de enviar el pedido.");
+            document.getElementById("input-nombre").focus();
+            return;
         }
+
+        // Calculamos el total exacto con envío incluido
+        let subtotal = 0;
+        carrito.forEach(item => {
+            subtotal += item.precio * item.cantidad;
+        });
+
+        let tipoEntrega = document.querySelector('input[name="entrega"]:checked').value;
+        let costoEnvio = 0.00;
+        if (tipoEntrega === "domicilio") {
+            let selectUbi = document.getElementById("select-ubicacion");
+            if (selectUbi.value !== "alotenango") {
+                costoEnvio = 5.00;
+            }
+        }
+        let totalGeneral = subtotal + costoEnvio;
+
+        // Creamos un formulario temporal dinámico para enviarlo por POST a Flask y Supabase
+        let form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/crear-pedido";
+
+        let inputNombre = document.createElement("input");
+        inputNombre.type = "hidden";
+        inputNombre.name = "nombre";
+        inputNombre.value = nombreCliente;
+        form.appendChild(inputNombre);
+
+        let inputTotal = document.createElement("input");
+        inputTotal.type = "hidden";
+        inputTotal.name = "total_pedido";
+        inputTotal.value = totalGeneral.toFixed(2);
+        form.appendChild(inputTotal);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
