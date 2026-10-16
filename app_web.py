@@ -48,17 +48,14 @@ def index():
 
 @app.route("/crear-pedido", methods=["POST"])
 def crear_pedido():
-  # Recibimos los datos del formulario web o carrito
   nombre_cliente = request.form.get("nombre", "Cliente Web")
   telefono_cliente = request.form.get("telefono", "")
+  total_pedido = float(request.form.get("total_pedido", 0.0))
 
   # Generamos un código de pedido único
   codigo_pedido = f"PED-{random.randint(1000, 9999)}"
 
-  # Aquí puedes procesar los productos del carrito que envía tu HTML
-  # Ejemplo simulado de total:
-  total_pedido = float(request.form.get("total_pedido", 0.0))
-
+  # Guardamos el pedido en Supabase con estado PENDIENTE DE PAGO
   url_pedidos = f"{SUPABASE_URL}/rest/v1/pedidos"
   headers = {
       "apikey": SUPABASE_KEY,
@@ -80,29 +77,47 @@ def crear_pedido():
   except Exception as e:
     print("Error al registrar pedido en Supabase:", e)
 
-  return render_template(
-      "pedido_exitoso.html",
-      codigo=codigo_pedido,
-      nombre=nombre_cliente,
-      total=total_pedido,
+  # Enlace directo a WhatsApp con el mensaje prearmado para el negocio
+  mensaje_wa = (
+      f"Hola, quiero completar mi pago. Mi código de pedido es"
+      f" {codigo_pedido} a nombre de {nombre_cliente} por un total de"
+      f" Q{total_pedido:.2f}"
   )
+  link_whatsapp = f"https://wa.me/50242001925?text={requests.utils.quote(mensaje_wa)}"
+
+  return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Pedido Generado</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-light text-center py-5">
+        <div class="container card p-5 shadow" style="max-width: 600px;">
+            <h2 class="text-success mb-3">¡Pedido generado con éxito!</h2>
+            <p class="lead">Tu código de orden es: <strong>{codigo_pedido}</strong></p>
+            <p>Cliente: <strong>{nombre_cliente}</strong></p>
+            <p class="mb-4">Total a pagar: <strong class="text-primary">Q{total_pedido:.2f}</strong></p>
+            
+            <div class="alert alert-warning">
+                Para finalizar y validar tu compra, haz clic en el botón de abajo para contactarnos vía WhatsApp con los detalles de tu pedido.
+            </div>
+            
+            <a href="{link_whatsapp}" target="_blank" class="btn btn-success btn-lg w-100 mb-3">
+                💬 Contactar por WhatsApp para completar el pago
+            </a>
+            <br>
+            <a href="/" class="btn btn-secondary">Regresar a la Tienda</a>
+        </div>
+    </body>
+    </html>
+    """
 
 
 @app.route("/tramites-en-linea")
 def tramites_en_linea():
-  servicios = [
-      {
-          "nombre": "Antecedentes Penales",
-          "costo": 5.00,
-          "desc": "Solicitud y gestión rápida con opción de pago.",
-      },
-      {
-          "nombre": "Antecedentes Policiacos",
-          "costo": 35.00,
-          "desc": "Gestión digital inmediata.",
-      },
-  ]
-  return render_template("tramites.html", servicios=servicios)
+  return render_template("tramites.html")
 
 
 if __name__ == "__main__":
