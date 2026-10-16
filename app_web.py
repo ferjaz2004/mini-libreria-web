@@ -186,5 +186,37 @@ def tramites_en_linea():
   return render_template("tramites.html", servicios=servicios)
 
 
+@app.route("/rastreo", methods=["GET", "POST"])
+def rastreo():
+  tramites = None
+  dpi_buscado = ""
+  if request.method == "POST":
+    dpi_buscado = request.form.get("dpi", "").strip()
+    if dpi_buscado:
+      url = f"{SUPABASE_URL}/rest/v1/tramites?dpi=eq.{dpi_buscado}&select=id,dpi,nombre_cliente,tipo_tramite,costo,fecha_registro,estado"
+      headers = {
+          "apikey": SUPABASE_KEY,
+          "Authorization": f"Bearer {SUPABASE_KEY}",
+      }
+      try:
+        resp = requests.get(url, headers=headers)
+        if resp.status_code == 200:
+          data = resp.json()
+          tramites = []
+          for t in data:
+            tramites.append((
+                t.get("id"),
+                t.get("dpi"),
+                t.get("nombre_cliente"),
+                t.get("tipo_tramite"),
+                float(t.get("costo", 0.0)),
+                t.get("fecha_registro"),
+                t.get("estado", "Papelería recibida"),
+            ))
+      except Exception as e:
+        print("Error al consultar trámites:", e)
+  return render_template("rastreo.html", tramites=tramites, dpi=dpi_buscado)
+
+
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=5000, debug=True)
