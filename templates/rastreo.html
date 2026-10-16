@@ -6,40 +6,40 @@
     <title>Consulta de Trámites - Mini Librería y Servicios</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; color: #333; }
-        .navbar { background-color: #343a40; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        .navbar h2 { margin: 0; font-size: 20px; }
-        .nav-links a { color: white; text-decoration: none; margin-left: 20px; font-weight: 600; font-size: 15px; }
-        .nav-links a:hover { color: #17a2b8; }
-        .header { background-color: #343a40; color: white; text-align: center; padding: 25px 20px; }
-        .header h1 { margin: 0; font-size: 22px; }
+        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .nav-links a { color: #e2e8f0; text-decoration: none; margin-left: 20px; font-weight: 600; font-size: 15px; }
+        .nav-links a:hover { color: #38bdf8; }
+        .header { background: linear-gradient(135deg, #0284c7, #3b82f6); color: white; text-align: center; padding: 30px 20px; }
+        .header h1 { margin: 0; font-size: 24px; }
         .container { max-width: 700px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 20px; text-align: center; }
-        input[type="text"] { width: 80%; padding: 12px; font-size: 16px; border: 1px solid #ced4da; border-radius: 5px; outline: none; }
-        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 5px; }
-        button:hover { background-color: #0056b3; }
-        .resultado-card { background: #e9ecef; border-left: 6px solid #007bff; padding: 15px 20px; margin-top: 20px; border-radius: 4px; text-align: left; }
-        .resultado-card h3 { margin-top: 0; color: #0056b3; }
-        .estado-badge { display: inline-block; padding: 6px 12px; background-color: #28a745; color: white; border-radius: 20px; font-weight: bold; font-size: 14px; margin-top: 10px; }
-        .no-results { color: #dc3545; font-weight: bold; text-align: center; margin-top: 20px; }
+        .form-group { margin-bottom: 20px; text-align: center; display: flex; gap: 10px; justify-content: center; }
+        input[type="text"] { width: 70%; padding: 12px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+        button { background-color: #0284c7; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0369a1; }
+        .resultado-card { background: #f8fafc; border-left: 6px solid #0284c7; padding: 20px; margin-top: 20px; border-radius: 6px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .resultado-card h3 { margin-top: 0; color: #1e293b; }
+        .estado-badge { display: inline-block; padding: 8px 16px; background-color: #10b981; color: white; border-radius: 20px; font-weight: bold; font-size: 14px; margin-top: 10px; }
+        .no-results { color: #ef4444; font-weight: bold; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- Barra de Navegación -->
     <div class="navbar">
         <h2>📚 Mini Librería Guatemala</h2>
         <div class="nav-links">
-            <a href="/">Inicio / Tienda</a>
+            <a href="/">Tienda</a>
+            <a href="/tramites-en-linea">Trámites en Línea</a>
             <a href="/rastreo">Rastreo de Trámites</a>
         </div>
     </div>
 
     <div class="header">
         <h1>Sistema de Rastreo en Línea de Trámites</h1>
+        <p>Consulta el estado de tu gestión ingresando tu número de DPI</p>
     </div>
 
     <div class="container">
-        <h2 style="text-align: center; margin-top: 0;">Consulta el estado de tu gestión</h2>
         <form method="POST">
             <div class="form-group">
                 <input type="text" name="dpi" placeholder="Ingresa tu número de DPI sin espacios..." value="{{ dpi }}" required>
@@ -49,10 +49,10 @@
 
         {% if tramites is not none %}
             {% if tramites %}
-                <h3 style="margin-top: 30px; border-bottom: 2px solid #dee2e6; padding-bottom: 5px;">Resultados encontrados para el DPI: {{ dpi }}</h3>
+                <h3 style="margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; color: #1e293b;">Resultados encontrados para el DPI: {{ dpi }}</h3>
                 {% for t in tramites %}
                     <div class="resultado-card">
-                        <h3>Trámite ID #{{ t[0] }} - {{ t[3] }}</h3>
+                        <h3>Trámite #{{ t[0] }} - {{ t[3] }}</h3>
                         <p><strong>Cliente:</strong> {{ t[2] }}</p>
                         <p><strong>Fecha de Registro:</strong> {{ t[5] }}</p>
                         <p><strong>Costo del Servicio:</strong> Q{{ "%.2f"|format(t[4]) }}</p>
@@ -63,7 +63,7 @@
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="no-results">No se encontraron trámites registrados con el DPI "{{ dpi }}". Verifica que esté correcto.</p>
+                <p class="no-results">No se encontraron trámites registrados con el DPI "{{ dpi }}[cite: 2]". Verifica que esté correcto.</p>
             {% endif %}
         {% endif %}
     </div>

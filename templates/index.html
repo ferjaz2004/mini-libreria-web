@@ -9,6 +9,7 @@
         .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
         .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
         .nav-links a { color: #e2e8f0; text-decoration: none; margin-left: 20px; font-weight: 600; font-size: 15px; }
+        .nav-links a:hover { color: #38bdf8; }
         .main-layout { display: flex; max-width: 1200px; margin: 30px auto; padding: 0 20px; gap: 30px; }
         .catalog-section { flex: 2; }
         .cart-section { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: fit-content; }
@@ -16,8 +17,8 @@
         .product-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); text-align: center; border-top: 4px solid #10b981; }
         .product-price { color: #10b981; font-size: 17px; font-weight: bold; margin: 8px 0; }
         .qty-control { display: flex; justify-content: center; align-items: center; gap: 5px; margin: 10px 0; }
-        .qty-control button { background: #e2e8f0; border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; border-radius: 4px; }
-        .qty-control input { width: 50px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; }
+        .qty-control button { background: #e2e8f0; border: none; padding: 6px 12px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 14px; }
+        .qty-control input { width: 55px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px; font-size: 14px; }
         .btn-comprar { background-color: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
         .client-input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #cbd5e1; box-sizing: border-box; }
         .btn-whatsapp { background-color: #25d366; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 15px; }
@@ -30,6 +31,7 @@
         <div class="nav-links">
             <a href="/">Tienda</a>
             <a href="/tramites-en-linea">Trámites en Línea</a>
+            <a href="/rastreo">Rastreo de Trámites</a>
         </div>
     </div>
 
@@ -44,7 +46,7 @@
                             <p class="product-price">Q{{ "%.2f"|format(p[2]) }}</p>
                             <p style="font-size: 12px; color: #64748b;">Stock: <span id="stock-max-{{ loop.index }}">{{ p[3] }}</span> disponibles</p>
                             
-                            <!-- Controles de cantidad (+ / - y campo numérico) -->
+                            <!-- Controles interactivos de cantidad (+ / - y campo numérico) -->
                             <div class="qty-control">
                                 <button type="button" onclick="cambiarCantidadLocal('{{ loop.index }}', -1)">-</button>
                                 <input type="number" id="qty-{{ loop.index }}" value="1" min="1" max="{{ p[3] }}" onchange="validarStockInput(this, {{ p[3] }})">
@@ -92,7 +94,10 @@
 
         function validarStockInput(input, maxStock) {
             let val = parseInt(input.value) || 1;
-            if (val < 1) input.value = 1;
+            if (val < 1) {
+                input.value = 1;
+                return;
+            }
             if (val > maxStock) {
                 alert("La cantidad solicitada supera el stock disponible (" + maxStock + ").");
                 input.value = maxStock;
