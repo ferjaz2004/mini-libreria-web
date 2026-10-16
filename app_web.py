@@ -58,7 +58,6 @@ def crear_pedido():
     telefono_cliente = request.form.get("telefono", "Sin teléfono")
     total_pedido = float(request.form.get("total_pedido", 0.0))
 
-    # Recibimos el carrito enviado desde el index.html
     carrito_json = request.form.get("carrito_productos", "[]")
     try:
       carrito_productos = json.loads(carrito_json)
@@ -86,21 +85,49 @@ def crear_pedido():
         f"{SUPABASE_URL}/rest/v1/pedidos", json=payload_pedido, headers=headers
     )
 
-    # 2. Insertar cada producto comprado en la tabla 'detalles_pedido'
+    # 2. Insertar detalles y descontar stock automáticamente en Supabase
     if carrito_productos:
       for item in carrito_productos:
+        nombre_prod = item.get("nombre", "Producto")
+        cantidad_comprada = int(item.get("cantidad", 1))
+
+        # Registrar detalle del pedido
         payload_detalle = {
             "codigo_pedido": codigo_pedido,
-            "producto_nombre": item.get("nombre", "Producto"),
-            "cantidad": int(item.get("cantidad", 1)),
-            "subtotal": float(item.get("precio", 0.0))
-            * int(item.get("cantidad", 1)),
+            "producto_nombre": nombre_prod,
+            "cantidad": cantidad_comprada,
+            "subtotal": float(item.get("precio", 0.0)) * cantidad_comprada,
         }
         requests.post(
             f"{SUPABASE_URL}/rest/v1/detalles_pedido",
             json=payload_detalle,
             headers=headers,
         )
+
+        # Descontar stock en la tabla inventario de Supabase
+        url_inv = (
+            f"{SUPABASE_URL}/rest/v1/inventario?nombre=eq.{requests.utils.quote(nombre_prod)}"
+        )
+        resp_inv = requests.get(url_inv, headers=headers)
+        if resp_inv.status_code == 200:
+          inv_data = resp_inv.json()
+          if inv_data:
+            prod_actual = inv_data[0]
+            prod_id = prod_actual.get("id")
+            stock_actual = int(prod_actual.get("stock", 0))
+            nuevo_stock = max(0, stock_actual - cantidad_comprada)
+
+            # Actualizar stock en Supabase
+            url_update = f"{SUPABASE_URL}/rest/v1/inventario?id=eq.{prod_id}"
+            requests.patch(
+                url_update,
+                json={"stock": nuevo_stock},
+                headers={
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                },
+            )
 
     mensaje_wa = (
         f"Hola, mi nombre es {nombre_cliente}. Deseo completar el pago de mi"
@@ -126,7 +153,7 @@ def crear_pedido():
                 <p class="mb-4">Total a pagar: <strong class="text-primary">Q{total_pedido:.2f}</strong></p>
                 
                 <div class="alert alert-warning">
-                    Pedido y detalles registrados correctamente en el sistema. Haz clic en el botón de abajo para contactarnos vía WhatsApp y completar el pago.
+                    Pedido registrado y stock descontado correctamente. Haz clic en el botón de abajo para contactarnos vía WhatsApp y completar el pago.
                 </div>
                 
                 <a href="{link_whatsapp}" target="_blank" class="btn btn-success btn-lg w-100 mb-3" style="background-color: #25d366; border: none;">
