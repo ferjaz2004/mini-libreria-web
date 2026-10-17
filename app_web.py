@@ -13,7 +13,7 @@ SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
 
 
 def obtener_productos_db():
-  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url"
+  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url&order=id.asc"
   headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
   try:
     response = requests.get(url, headers=headers)
@@ -21,9 +21,9 @@ def obtener_productos_db():
       data = response.json()
       productos_visibles = []
       for p in data:
-        # Forzamos a mostrar el producto si no está explícitamente en 0 o False
         vis = p.get("visible_web")
-        if vis not in [0, False, "0"]:
+        # Filtramos estrictamente para que solo muestre los que están activos/visibles (1 o True)
+        if vis == 1 or vis is True or vis == "1":
           productos_visibles.append((
               p.get("id"),
               p.get("nombre"),
@@ -31,17 +31,12 @@ def obtener_productos_db():
               int(p.get("stock", 0)),
               str(p.get("imagen_url", "") or ""),
           ))
-      # Si la base de datos devuelve productos, los retornamos
-      if productos_visibles:
-        return productos_visibles
+      return productos_visibles
   except Exception as e:
     print("Error conectando con Supabase para inventario:", e)
 
-  # Respaldo absoluto de seguridad para que la tienda NUNCA quede en blanco
-  return [
-      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50, ""),
-      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30, ""),
-  ]
+  # SIN PRODUCTOS DE RESPALDO FALSOS: Si hay error, devuelve vacío para obligar a mostrar los reales de la base de datos
+  return []
 
 
 @app.route("/")
