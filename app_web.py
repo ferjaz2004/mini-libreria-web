@@ -22,25 +22,21 @@ def obtener_productos_db():
       productos_visibles = []
       for p in data:
         vis = p.get("visible_web")
-        # Mostramos el producto a menos que esté explícitamente oculto (0 o False)
+        # Traemos todos los productos que no estén explícitamente ocultos en 0 o False
         if vis not in [0, False, "0"]:
           productos_visibles.append((
               p.get("id"),
               p.get("nombre"),
               float(p.get("precio_venta", 0.0)),
-              p.get("stock", 0),
-              p.get("imagen_url", ""),
+              int(p.get("stock", 0)),
+              str(p.get("imagen_url", "") or ""),
           ))
       if productos_visibles:
         return productos_visibles
   except Exception as e:
     print("Error conectando con Supabase para inventario:", e)
 
-  # Respaldo por defecto para que la tienda nunca quede vacía
-  return [
-      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50, ""),
-      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30, ""),
-  ]
+  return []
 
 
 @app.route("/")
@@ -74,7 +70,6 @@ def crear_pedido():
         "Prefer": "return=minimal",
     }
 
-    # 1. Insertar pedido principal en la tabla 'pedidos'
     payload_pedido = {
         "codigo_pedido": codigo_pedido,
         "cliente_nombre": nombre_cliente,
@@ -86,13 +81,11 @@ def crear_pedido():
         f"{SUPABASE_URL}/rest/v1/pedidos", json=payload_pedido, headers=headers
     )
 
-    # 2. Insertar detalles y descontar stock automáticamente en Supabase
     if carrito_productos:
       for item in carrito_productos:
         nombre_prod = item.get("nombre", "Producto")
         cantidad_comprada = int(item.get("cantidad", 1))
 
-        # Registrar detalle del pedido
         payload_detalle = {
             "codigo_pedido": codigo_pedido,
             "producto_nombre": nombre_prod,
@@ -105,7 +98,6 @@ def crear_pedido():
             headers=headers,
         )
 
-        # Descontar stock en la tabla inventario de Supabase
         url_inv = (
             f"{SUPABASE_URL}/rest/v1/inventario?nombre=eq.{requests.utils.quote(nombre_prod)}"
         )
@@ -118,7 +110,6 @@ def crear_pedido():
             stock_actual = int(prod_actual.get("stock", 0))
             nuevo_stock = max(0, stock_actual - cantidad_comprada)
 
-            # Actualizar stock en Supabase
             url_update = f"{SUPABASE_URL}/rest/v1/inventario?id=eq.{prod_id}"
             requests.patch(
                 url_update,
