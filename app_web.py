@@ -21,9 +21,9 @@ def obtener_productos_db():
       data = response.json()
       productos_visibles = []
       for p in data:
-        vis = p.get("visible_web", 1)
-        # Hacemos la validación más flexible para asegurarnos de que se muestren
-        if vis == 1 or vis is True or vis == "1" or vis is None:
+        vis = p.get("visible_web")
+        # Mostramos el producto a menos que esté explícitamente oculto (0 o False)
+        if vis not in [0, False, "0"]:
           productos_visibles.append((
               p.get("id"),
               p.get("nombre"),
@@ -31,11 +31,16 @@ def obtener_productos_db():
               p.get("stock", 0),
               p.get("imagen_url", ""),
           ))
-      return productos_visibles
+      if productos_visibles:
+        return productos_visibles
   except Exception as e:
     print("Error conectando con Supabase para inventario:", e)
 
-  return []
+  # Respaldo por defecto para que la tienda nunca quede vacía
+  return [
+      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50, ""),
+      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30, ""),
+  ]
 
 
 @app.route("/")
