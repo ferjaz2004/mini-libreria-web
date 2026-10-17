@@ -23,6 +23,7 @@ def obtener_productos_db():
       for p in data:
         vis = p.get("visible_web", 1)
         if vis == 1 or vis is True:
+          # Estructura: (id, nombre, precio_venta, stock, imagen_url)
           productos_visibles.append((
               p.get("id"),
               p.get("nombre"),
