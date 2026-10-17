@@ -22,8 +22,8 @@ def obtener_productos_db():
       productos_visibles = []
       for p in data:
         vis = p.get("visible_web", 1)
-        if vis == 1 or vis is True:
-          # Estructura: (id, nombre, precio_venta, stock, imagen_url)
+        # Hacemos la validación más flexible para asegurarnos de que se muestren
+        if vis == 1 or vis is True or vis == "1" or vis is None:
           productos_visibles.append((
               p.get("id"),
               p.get("nombre"),
@@ -31,15 +31,11 @@ def obtener_productos_db():
               p.get("stock", 0),
               p.get("imagen_url", ""),
           ))
-      if productos_visibles:
-        return productos_visibles
+      return productos_visibles
   except Exception as e:
     print("Error conectando con Supabase para inventario:", e)
 
-  return [
-      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50, ""),
-      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30, ""),
-  ]
+  return []
 
 
 @app.route("/")
