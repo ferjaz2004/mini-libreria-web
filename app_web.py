@@ -10,6 +10,7 @@ app = Flask(__name__)
 # --- CREDENCIALES DE SUPABASE (Nube) ---
 SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
 SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
+BUCKET_PRIVADO = "tramites-privados"
 
 
 def obtener_productos_db():
@@ -96,9 +97,7 @@ def crear_pedido():
             headers=headers,
         )
 
-        url_inv = (
-            f"{SUPABASE_URL}/rest/v1/inventario?nombre=eq.{requests.utils.quote(nombre_prod)}"
-        )
+        url_inv = f"{SUPABASE_URL}/rest/v1/inventario?nombre=eq.{requests.utils.quote(nombre_prod)}"
         resp_inv = requests.get(url_inv, headers=headers)
         if resp_inv.status_code == 200:
           inv_data = resp_inv.json()
@@ -183,7 +182,7 @@ def rastreo():
   if request.method == "POST":
     dpi_buscado = request.form.get("dpi", "").strip()
     if dpi_buscado:
-      url = f"{SUPABASE_URL}/rest/v1/tramites?dpi=eq.{dpi_buscado}&select=id,dpi,nombre_cliente,tipo_tramite,costo,fecha_registro,estado"
+      url = f"{SUPABASE_URL}/rest/v1/tramites?dpi=eq.{dpi_buscado}&select=id,dpi,nombre_cliente,tipo_tramite,costo,fecha_registro,estado,archivo_url"
       headers = {
           "apikey": SUPABASE_KEY,
           "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -194,6 +193,32 @@ def rastreo():
           data = resp.json()
           tramites = []
           for t in data:
+            path_archivo = t.get("archivo_url", "") or ""
+            link_descarga = ""
+
+            # Si hay archivo guardado, generamos una URL firmada temporal de Supabase (válida por 300 segundos = 5 min)
+            if path_archivo:
+              try:
+                # Extraemos el nombre del archivo de la ruta almacenada
+                nombre_archivo = path_archivo.split("/")[-1]
+                url_signed = f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/{nombre_archivo}"
+                headers_storage = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                }
+                # Solicitamos URL con expiración de 300 segundos
+                resp_sign = requests.post(
+                    url_signed, json={"expiresIn": 300}, headers=headers_storage
+                )
+                if resp_sign.status_code == 200:
+                  token_data = resp_sign.json()
+                  signed_url_path = token_data.get("signedURL")
+                  if signed_url_path:
+                    link_descarga = f"{SUPABASE_URL}{signed_url_path}"
+              except Exception as ex:
+                print("Error al generar URL firmada:", ex)
+
             tramites.append((
                 t.get("id"),
                 t.get("dpi"),
@@ -202,6 +227,7 @@ def rastreo():
                 float(t.get("costo", 0.0)),
                 t.get("fecha_registro"),
                 t.get("estado", "Papelería recibida"),
+                link_descarga,
             ))
       except Exception as e:
         print("Error al consultar trámites:", e)
