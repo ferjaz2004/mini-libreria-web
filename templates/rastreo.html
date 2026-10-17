@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Trámites - Mini Librería y Servicios</title>
+    <title>Rastreo de Trámites - Mini Librería</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
         .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
         .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
         .nav-links a { color: #e2e8f0; text-decoration: none; margin-left: 20px; font-weight: 600; font-size: 15px; }
         .nav-links a:hover { color: #38bdf8; }
-        .header { background: linear-gradient(135deg, #0284c7, #3b82f6); color: white; text-align: center; padding: 30px 20px; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .container { max-width: 700px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 20px; text-align: center; display: flex; gap: 10px; justify-content: center; }
-        input[type="text"] { width: 70%; padding: 12px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
-        button { background-color: #0284c7; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0369a1; }
-        .resultado-card { background: #f8fafc; border-left: 6px solid #0284c7; padding: 20px; margin-top: 20px; border-radius: 6px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-        .resultado-card h3 { margin-top: 0; color: #1e293b; }
-        .estado-badge { display: inline-block; padding: 8px 16px; background-color: #10b981; color: white; border-radius: 20px; font-weight: bold; font-size: 14px; margin-top: 10px; }
-        .no-results { color: #ef4444; font-weight: bold; text-align: center; margin-top: 20px; }
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .search-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-bottom: 30px; }
+        .search-box { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
+        .search-box input { padding: 10px 15px; width: 70%; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        .search-box button { background-color: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; }
+        .result-card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border-left: 5px solid #0284c7; text-align: left; }
+        .badge-estado { display: inline-block; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 14px; color: white; background-color: #0284c7; margin-top: 8px; }
+        .badge-lista { background-color: #10b981; }
+        .btn-download { display: inline-block; background-color: #10b981; color: white; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; font-size: 14px; margin-top: 15px; transition: background 0.2s; }
+        .btn-download:hover { background-color: #059669; }
     </style>
 </head>
 <body>
@@ -34,36 +33,53 @@
         </div>
     </div>
 
-    <div class="header">
-        <h1>Sistema de Rastreo en Línea de Trámites</h1>
-        <p>Consulta el estado de tu gestión ingresando tu número de DPI</p>
-    </div>
-
     <div class="container">
-        <form method="POST">
-            <div class="form-group">
-                <input type="text" name="dpi" placeholder="Ingresa tu número de DPI sin espacios..." value="{{ dpi }}" required>
-                <button type="submit">🔍 Consultar</button>
-            </div>
-        </form>
+        <div class="search-card">
+            <h2>🔎 Consulta el Estado de tu Trámite</h2>
+            <p style="color: #64748b;">Ingresa tu número de DPI para verificar el avance de tu expediente.</p>
+            
+            <form method="POST" action="/rastreo">
+                <div class="search-box">
+                    <input type="text" name="dpi" value="{{ dpi }}" placeholder="Ingresa tu DPI (ej. 3494306590314)" required>
+                    <button type="submit">🔍 Consultar</button>
+                </div>
+            </form>
+        </div>
 
         {% if tramites is not none %}
             {% if tramites %}
-                <h3 style="margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; color: #1e293b;">Resultados encontrados para el DPI: {{ dpi }}</h3>
+                <h3>Resultados encontrados para el DPI: {{ dpi }}</h3>
                 {% for t in tramites %}
-                    <div class="resultado-card">
+                    <div class="result-card">
                         <h3>Trámite #{{ t[0] }} - {{ t[3] }}</h3>
                         <p><strong>Cliente:</strong> {{ t[2] }}</p>
                         <p><strong>Fecha de Registro:</strong> {{ t[5] }}</p>
                         <p><strong>Costo del Servicio:</strong> Q{{ "%.2f"|format(t[4]) }}</p>
-                        <div>
-                            <strong>Estado Actual:</strong><br>
-                            <span class="estado-badge">{{ t[6] }}</span>
-                        </div>
+                        <p><strong>Estado Actual:</strong></p>
+                        
+                        {% if "Lista" in t[6] or "LISTA" in t[6] %}
+                            <span class="badge-estado badge-lista">✅ {{ t[6] }}</span>
+                            
+                            <!-- Botón de Descarga si hay un archivo subido -->
+                            {% if t[7] and t[7] != "" %}
+                                <div style="margin-top: 15px;">
+                                    <a href="{{ t[7] }}" target="_blank" download class="btn-download">
+                                        📥 Descargar Documento / Papelería
+                                    </a>
+                                </div>
+                            {% else %}
+                                <p style="font-size: 13px; color: #64748b; margin-top: 10px;"><em>(El trámite está listo. Si necesitas la copia digital, solicítala por recepción).</em></p>
+                            {% endif %}
+
+                        {% else %}
+                            <span class="badge-estado">⏳ {{ t[6] }}</span>
+                        {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="no-results">No se encontraron trámites registrados con el DPI "{{ dpi }}[cite: 2]". Verifica que esté correcto.</p>
+                <div class="search-card" style="border-top: 4px solid #ef4444;">
+                    <p style="color: #ef4444; font-weight: bold; margin: 0;">❌ No se encontraron trámites registrados con el DPI: {{ dpi }}</p>
+                </div>
             {% endif %}
         {% endif %}
     </div>
