@@ -22,7 +22,6 @@ def obtener_productos_db():
       productos_visibles = []
       for p in data:
         vis = p.get("visible_web")
-        # Muestra todos los productos que estén marcados con visible_web = 1
         if vis == 1 or vis is True or vis == "1":
           productos_visibles.append((
               p.get("id"),
