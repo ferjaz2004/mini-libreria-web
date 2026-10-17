@@ -13,9 +13,7 @@ SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
 
 
 def obtener_productos_db():
-  url = (
-      f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web"
-  )
+  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url"
   headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
   try:
     response = requests.get(url, headers=headers)
@@ -30,6 +28,7 @@ def obtener_productos_db():
               p.get("nombre"),
               float(p.get("precio_venta", 0.0)),
               p.get("stock", 0),
+              p.get("imagen_url", ""),
           ))
       if productos_visibles:
         return productos_visibles
@@ -37,8 +36,8 @@ def obtener_productos_db():
     print("Error conectando con Supabase para inventario:", e)
 
   return [
-      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50),
-      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30),
+      (1, "Cuaderno Universitario 100 Hojas", 15.00, 50, ""),
+      (2, "Caja de Lápices BIC (12 unid.)", 25.00, 30, ""),
   ]
 
 
