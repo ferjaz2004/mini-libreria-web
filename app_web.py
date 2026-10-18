@@ -193,32 +193,41 @@ def rastreo():
           data = resp.json()
           tramites = []
           for t in data:
-            path_archivo = t.get("archivo_url", "") or ""
-            link_descarga = ""
+            cadena_archivos = t.get("archivo_url", "") or ""
+            lista_links_descarga = []
 
-            # Si hay archivo guardado, generamos una URL firmada segura y temporal (válida por 300 segundos = 5 min)
-            if path_archivo:
-              try:
-                nombre_archivo = path_archivo.split("/")[-1]
-                url_sign = (
-                    f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/"
-                    f"{nombre_archivo}"
-                )
-                headers_storage = {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                    "Content-Type": "application/json",
-                }
-                resp_sign = requests.post(
-                    url_sign, json={"expiresIn": 300}, headers=headers_storage
-                )
-                if resp_sign.status_code == 200:
-                  token_data = resp_sign.json()
-                  signed_url_path = token_data.get("signedURL")
-                  if signed_url_path:
-                    link_descarga = f"{SUPABASE_URL}/storage/v1{signed_url_path}"
-              except Exception as ex:
-                print("Error al generar URL firmada:", ex)
+            if cadena_archivos:
+              # Separamos por comas en caso de que sean múltiples documentos adjuntos
+              urls_individuales = [
+                  u.strip() for u in cadena_archivos.split(",") if u.strip()
+              ]
+              for path_archivo in urls_individuales:
+                try:
+                  nombre_archivo = path_archivo.split("/")[-1]
+                  # Limpiamos prefijos de fecha si los hubiera para mostrar un nombre más limpio
+                  nombre_limpio = nombre_archivo
+                  if "_" in nombre_archivo:
+                    partes = nombre_archivo.split("_", 3)
+                    if len(partes) > 3:
+                      nombre_limpio = partes[3]
+
+                  url_sign = f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/{nombre_archivo}"
+                  headers_storage = {
+                      "apikey": SUPABASE_KEY,
+                      "Authorization": f"Bearer {SUPABASE_KEY}",
+                      "Content-Type": "application/json",
+                  }
+                  resp_sign = requests.post(
+                      url_sign, json={"expiresIn": 300}, headers=headers_storage
+                  )
+                  if resp_sign.status_code == 200:
+                    token_data = resp_sign.json()
+                    signed_url_path = token_data.get("signedURL")
+                    if signed_url_path:
+                      link_final = f"{SUPABASE_URL}/storage/v1{signed_url_path}"
+                      lista_links_descarga.append((nombre_limpio, link_final))
+                except Exception as ex:
+                  print("Error al generar URL firmada para archivo:", ex)
 
             tramites.append((
                 t.get("id"),
@@ -228,7 +237,7 @@ def rastreo():
                 float(t.get("costo", 0.0)),
                 t.get("fecha_registro"),
                 t.get("estado", "Papelería recibida"),
-                link_descarga,
+                lista_links_descarga,
             ))
       except Exception as e:
         print("Error al consultar trámites:", e)
