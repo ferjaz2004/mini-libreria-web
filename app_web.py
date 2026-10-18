@@ -208,7 +208,8 @@ def crear_tramite_web():
         headers_storage = {
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/octet-stream",
+            "Content-Type": archivo.content_type
+            or "application/octet-stream",
             "x-upsert": "true",
         }
         contenido_bytes = archivo.read()
@@ -217,6 +218,12 @@ def crear_tramite_web():
         )
         if resp_doc.status_code in [200, 201]:
           archivo_cliente_url_final = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_CLIENTES}/{nombre_arc}"
+        else:
+          print(
+              "Error al subir al bucket tramites-clientes:",
+              resp_doc.status_code,
+              resp_doc.text,
+          )
       except Exception as e:
         print("Error al subir boleta del cliente desde la web:", e)
 
@@ -239,7 +246,11 @@ def crear_tramite_web():
         "estado": estado,
         "archivo_cliente_url": archivo_cliente_url_final,
     }
-    requests.post(f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers)
+    resp_db = requests.post(
+        f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers
+    )
+    if resp_db.status_code not in [200, 201]:
+      print("Error al guardar trámite en Supabase DB:", resp_db.text)
 
     mensaje_wa = (
         f"Hola, he solicitado el trámite de *Antecedentes Penales* en"
