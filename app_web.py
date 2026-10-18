@@ -11,7 +11,7 @@ app = Flask(__name__)
 # --- CREDENCIALES DE SUPABASE (Nube) ---
 SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
 SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
-BUCKET_PRIVADO = "tramites-privados"
+BUCKET_CLIENTES = "tramites-clientes"  # <--- Bucket exclusivo para los archivos del cliente
 
 
 def obtener_productos_db():
@@ -196,15 +196,15 @@ def crear_tramite_web():
     fecha_reg = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     estado = "Papelería recibida"
 
-    archivo_url_final = ""
+    archivo_cliente_url_final = ""
     archivo = request.files.get("archivo")
     if archivo and archivo.filename != "":
       try:
         base_nom = re.sub(
             r"[^a-zA-Z0-9_.-]", "_", os.path.basename(archivo.filename)
         )
-        nombre_arc = f"tramite_{dpi}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{base_nom}"
-        url_storage = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_PRIVADO}/{requests.utils.quote(nombre_arc)}"
+        nombre_arc = f"cliente_{dpi}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{base_nom}"
+        url_storage = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_CLIENTES}/{requests.utils.quote(nombre_arc)}"
         headers_storage = {
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -216,9 +216,9 @@ def crear_tramite_web():
             url_storage, data=contenido_bytes, headers=headers_storage
         )
         if resp_doc.status_code in [200, 201]:
-          archivo_url_final = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_PRIVADO}/{nombre_arc}"
+          archivo_cliente_url_final = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_CLIENTES}/{nombre_arc}"
       except Exception as e:
-        print("Error al subir boleta desde la web:", e)
+        print("Error al subir boleta del cliente desde la web:", e)
 
     headers = {
         "apikey": SUPABASE_KEY,
@@ -237,7 +237,7 @@ def crear_tramite_web():
         "costo": costo,
         "fecha_registro": fecha_reg,
         "estado": estado,
-        "archivo_url": archivo_url_final,
+        "archivo_cliente_url": archivo_cliente_url_final,
     }
     requests.post(f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers)
 
@@ -261,12 +261,12 @@ def crear_tramite_web():
         <body class="bg-light text-center py-5">
             <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #10b981; margin: auto;">
                 <h2 class="text-success mb-3">¡Solicitud Registrada en el Sistema!</h2>
-                <p class="lead">Tus datos han sido enviados directamente a nuestra central de trámites.</p>
+                <p class="lead">Tus datos y comprobante han sido enviados directamente a nuestra central de trámites.</p>
                 <p>Cliente: <strong>{nombre}</strong> (DPI: {dpi})</p>
                 <p class="mb-4">Costo del servicio: <strong class="text-primary">Q{costo:.2f}</strong></p>
                 
                 <div class="alert alert-warning">
-                    El trámite ya está visible en nuestra aplicación de escritorio. Haz clic abajo para notificar por WhatsApp y dar seguimiento.
+                    El trámite y tu boleta ya están disponibles en nuestra aplicación de escritorio. Haz clic abajo para notificar por WhatsApp y dar seguimiento.
                 </div>
                 
                 <a href="{link_whatsapp}" target="_blank" class="btn btn-success btn-lg w-100 mb-3" style="background-color: #25d366; border: none;">
@@ -316,7 +316,7 @@ def rastreo():
                     if len(partes) > 3:
                       nombre_limpio = partes[3]
 
-                  url_sign = f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/{nombre_archivo}"
+                  url_sign = f"{SUPABASE_URL}/storage/v1/object/sign/tramites-privados/{nombre_archivo}"
                   headers_storage = {
                       "apikey": SUPABASE_KEY,
                       "Authorization": f"Bearer {SUPABASE_KEY}",
