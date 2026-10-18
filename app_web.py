@@ -196,26 +196,27 @@ def rastreo():
             path_archivo = t.get("archivo_url", "") or ""
             link_descarga = ""
 
-            # Si hay archivo guardado, generamos una URL firmada temporal de Supabase (válida por 300 segundos = 5 min)
+            # Si hay archivo guardado, generamos una URL firmada segura y temporal (válida por 300 segundos = 5 min)
             if path_archivo:
               try:
-                # Extraemos el nombre del archivo de la ruta almacenada
                 nombre_archivo = path_archivo.split("/")[-1]
-                url_signed = f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/{nombre_archivo}"
+                url_sign = (
+                    f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET_PRIVADO}/"
+                    f"{nombre_archivo}"
+                )
                 headers_storage = {
                     "apikey": SUPABASE_KEY,
                     "Authorization": f"Bearer {SUPABASE_KEY}",
                     "Content-Type": "application/json",
                 }
-                # Solicitamos URL con expiración de 300 segundos
                 resp_sign = requests.post(
-                    url_signed, json={"expiresIn": 300}, headers=headers_storage
+                    url_sign, json={"expiresIn": 300}, headers=headers_storage
                 )
                 if resp_sign.status_code == 200:
                   token_data = resp_sign.json()
                   signed_url_path = token_data.get("signedURL")
                   if signed_url_path:
-                    link_descarga = f"{SUPABASE_URL}{signed_url_path}"
+                    link_descarga = f"{SUPABASE_URL}/storage/v1{signed_url_path}"
               except Exception as ex:
                 print("Error al generar URL firmada:", ex)
 
