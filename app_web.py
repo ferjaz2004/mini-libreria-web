@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import os
 import random
+import re
 import requests
 from flask import Flask, redirect, render_template, request, url_for
 
@@ -175,6 +176,112 @@ def tramites_en_linea():
   return render_template("tramites.html", servicios=servicios)
 
 
+@app.route("/crear-tramite-web", methods=["POST"])
+def crear_tramite_web():
+  try:
+    nombre = request.form.get("nombre", "").strip()
+    dpi = request.form.get("dpi", "").strip()
+    correo = request.form.get("correo", "").strip()
+    telefono = request.form.get("telefono", "").strip()
+    nacimiento = request.form.get("nacimiento", "").strip()
+    tipo_pago = request.form.get("tipo_pago", "nosotros").strip()
+
+    tipo_tramite = "Antecedentes Penales"
+    costo = 40.00 if tipo_pago == "nosotros" else 5.00
+    pago_boleta = (
+        "Nosotros pagamos la boleta"
+        if tipo_pago == "nosotros"
+        else "Boleta ya pagada por cliente"
+    )
+    fecha_reg = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    estado = "Papelería recibida"
+
+    archivo_url_final = ""
+    archivo = request.files.get("archivo")
+    if archivo and archivo.filename != "":
+      try:
+        base_nom = re.sub(
+            r"[^a-zA-Z0-9_.-]", "_", os.path.basename(archivo.filename)
+        )
+        nombre_arc = f"tramite_{dpi}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{base_nom}"
+        url_storage = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_PRIVADO}/{requests.utils.quote(nombre_arc)}"
+        headers_storage = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/octet-stream",
+            "x-upsert": "true",
+        }
+        contenido_bytes = archivo.read()
+        resp_doc = requests.post(
+            url_storage, data=contenido_bytes, headers=headers_storage
+        )
+        if resp_doc.status_code in [200, 201]:
+          archivo_url_final = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_PRIVADO}/{nombre_arc}"
+      except Exception as e:
+        print("Error al subir boleta desde la web:", e)
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+    payload = {
+        "dpi": dpi,
+        "nombre_cliente": nombre,
+        "fecha_nacimiento": nacimiento,
+        "correo": correo,
+        "telefono": telefono,
+        "tipo_tramite": tipo_tramite,
+        "pago_boleta": pago_boleta,
+        "costo": costo,
+        "fecha_registro": fecha_reg,
+        "estado": estado,
+        "archivo_url": archivo_url_final,
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers)
+
+    mensaje_wa = (
+        f"Hola, he solicitado el trámite de *Antecedentes Penales* en"
+        f" línea.%0A%0A*Nombre:* {nombre}%0A*DPI:* {dpi}%0A*Teléfono:*"
+        f" {telefono}%0A*Modalidad:* {pago_boleta}%0A*Costo:* Q{costo:.2f}"
+    )
+    link_whatsapp = (
+        f"https://wa.me/50242001925?text={requests.utils.quote(mensaje_wa)}"
+    )
+
+    return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Solicitud Enviada</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        </head>
+        <body class="bg-light text-center py-5">
+            <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #10b981; margin: auto;">
+                <h2 class="text-success mb-3">¡Solicitud Registrada en el Sistema!</h2>
+                <p class="lead">Tus datos han sido enviados directamente a nuestra central de trámites.</p>
+                <p>Cliente: <strong>{nombre}</strong> (DPI: {dpi})</p>
+                <p class="mb-4">Costo del servicio: <strong class="text-primary">Q{costo:.2f}</strong></p>
+                
+                <div class="alert alert-warning">
+                    El trámite ya está visible en nuestra aplicación de escritorio. Haz clic abajo para notificar por WhatsApp y dar seguimiento.
+                </div>
+                
+                <a href="{link_whatsapp}" target="_blank" class="btn btn-success btn-lg w-100 mb-3" style="background-color: #25d366; border: none;">
+                    💬 Notificar Solicitud por WhatsApp
+                </a>
+                <br>
+                <a href="/tramites-en-linea" class="btn btn-secondary w-100">Regresar a Trámites</a>
+            </div>
+        </body>
+        </html>
+        """
+  except Exception as e:
+    return f"Error al procesar la solicitud de trámite: {e}"
+
+
 @app.route("/rastreo", methods=["GET", "POST"])
 def rastreo():
   tramites = None
@@ -197,14 +304,12 @@ def rastreo():
             lista_links_descarga = []
 
             if cadena_archivos:
-              # Separamos por comas en caso de que sean múltiples documentos adjuntos
               urls_individuales = [
                   u.strip() for u in cadena_archivos.split(",") if u.strip()
               ]
               for path_archivo in urls_individuales:
                 try:
                   nombre_archivo = path_archivo.split("/")[-1]
-                  # Limpiamos prefijos de fecha si los hubiera para mostrar un nombre más limpio
                   nombre_limpio = nombre_archivo
                   if "_" in nombre_archivo:
                     partes = nombre_archivo.split("_", 3)
