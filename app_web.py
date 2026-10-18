@@ -11,7 +11,7 @@ app = Flask(__name__)
 # --- CREDENCIALES DE SUPABASE (Nube) ---
 SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
 SUPABASE_KEY = "sb_publishable_-_9y5B7SDdLkZY_wu0sQGQ_yUflKTWW"
-BUCKET_CLIENTES = "tramites-clientes"  # <--- Bucket exclusivo para los archivos del cliente
+BUCKET_CLIENTES = "tramites-clientes"  # Bucket exclusivo para archivos del cliente
 
 
 def obtener_productos_db():
@@ -216,16 +216,13 @@ def crear_tramite_web():
         resp_doc = requests.post(
             url_storage, data=contenido_bytes, headers=headers_storage
         )
+
         if resp_doc.status_code in [200, 201]:
           archivo_cliente_url_final = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_CLIENTES}/{nombre_arc}"
         else:
-          print(
-              "Error al subir al bucket tramites-clientes:",
-              resp_doc.status_code,
-              resp_doc.text,
-          )
+          return f"<h3>Error al subir archivo a Storage:</h3><p>Código {resp_doc.status_code}: {resp_doc.text}</p><a href='/tramites-en-linea'>Regresar</a>"
       except Exception as e:
-        print("Error al subir boleta del cliente desde la web:", e)
+        return f"<h3>Excepción al subir archivo:</h3><p>{e}</p><a href='/tramites-en-linea'>Regresar</a>"
 
     headers = {
         "apikey": SUPABASE_KEY,
@@ -250,7 +247,7 @@ def crear_tramite_web():
         f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers
     )
     if resp_db.status_code not in [200, 201]:
-      print("Error al guardar trámite en Supabase DB:", resp_db.text)
+      return f"<h3>Error al guardar en la Base de Datos (Tabla tramites):</h3><p>Código {resp_db.status_code}: {resp_db.text}</p><a href='/tramites-en-linea'>Regresar</a>"
 
     mensaje_wa = (
         f"Hola, he solicitado el trámite de *Antecedentes Penales* en"
@@ -290,7 +287,7 @@ def crear_tramite_web():
         </html>
         """
   except Exception as e:
-    return f"Error al procesar la solicitud de trámite: {e}"
+    return f"Error general al procesar la solicitud: {e}"
 
 
 @app.route("/rastreo", methods=["GET", "POST"])
