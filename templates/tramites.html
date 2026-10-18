@@ -94,41 +94,48 @@
             <span class="close-btn" onclick="cerrarModalPenales()">&times;</span>
             <h2 style="margin-top: 0; color: #1e293b; font-size: 20px;">Solicitud de Antecedentes Penales</h2>
             
-            <div class="form-group">
-                <label>Nombre Completo:</label>
-                <input type="text" id="penales-nombre" class="form-control" placeholder="Tus nombres y apellidos...">
-            </div>
-
-            <div class="form-group">
-                <label>Correo Electrónico:</label>
-                <input type="email" id="penales-correo" class="form-control" placeholder="ejemplo@correo.com">
-            </div>
-
-            <div class="form-group">
-                <label>Número de Teléfono:</label>
-                <input type="text" id="penales-telefono" class="form-control" placeholder="Número de contacto...">
-            </div>
-
-            <div class="form-group">
-                <label>Fecha de Nacimiento:</label>
-                <input type="date" id="penales-Nacimiento" class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label>¿Quién paga la boleta en el banco?</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="tipo-pago-penales" value="nosotros" checked onclick="toggleComprobante()"> Nosotros pagamos la boleta (Costo total: **Q40.00**)</label>
-                    <label><input type="radio" name="tipo-pago-penales" value="cliente" onclick="toggleComprobante()"> Ya he pagado la boleta (Costo de gestión: **Q5.00**)</label>
+            <form action="/crear-tramite-web" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Nombre Completo:</label>
+                    <input type="text" name="nombre" id="penales-nombre" class="form-control" placeholder="Tus nombres y apellidos..." required>
                 </div>
-            </div>
 
-            <div class="form-group" id="grupo-comprobante" style="display: none;">
-                <label>Adjuntar Boleta (Imagen o PDF):</label>
-                <input type="file" id="penales-archivo" class="form-control" accept="image/*,.pdf">
-                <small style="color: #64748b; font-size: 12px;">Sube la foto o el PDF del comprobante que te generó el banco.</small>
-            </div>
+                <div class="form-group">
+                    <label>Número de DPI:</label>
+                    <input type="text" name="dpi" id="penales-dpi" class="form-control" placeholder="Tus 13 dígitos de DPI..." required>
+                </div>
 
-            <button class="btn-tramite" onclick="enviarPenalesWhatsApp()" style="margin-top: 10px;">Enviar Solicitud por WhatsApp</button>
+                <div class="form-group">
+                    <label>Correo Electrónico:</label>
+                    <input type="email" name="correo" id="penales-correo" class="form-control" placeholder="ejemplo@correo.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Número de Teléfono:</label>
+                    <input type="text" name="telefono" id="penales-telefono" class="form-control" placeholder="Número de contacto..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de Nacimiento:</label>
+                    <input type="date" name="nacimiento" id="penales-Nacimiento" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Quién paga la boleta en el banco?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="tipo_pago" value="nosotros" checked onclick="toggleComprobante()"> Nosotros pagamos la boleta (Costo total: **Q40.00**)</label>
+                        <label><input type="radio" name="tipo_pago" value="cliente" onclick="toggleComprobante()"> Ya he pagado la boleta (Costo de gestión: **Q5.00**)</label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="grupo-comprobante" style="display: none;">
+                    <label>Adjuntar Boleta (Imagen o PDF):</label>
+                    <input type="file" name="archivo" id="penales-archivo" class="form-control" accept="image/*,.pdf">
+                    <small style="color: #64748b; font-size: 12px;">Sube la foto o el PDF del comprobante que te generó el banco.</small>
+                </div>
+
+                <button type="submit" class="btn-tramite" style="margin-top: 10px;">Enviar Solicitud al Sistema</button>
+            </form>
         </div>
     </div>
 
@@ -146,53 +153,13 @@
         }
 
         function toggleComprobante() {
-            let tipoPago = document.querySelector('input[name="tipo-pago-penales"]:checked').value;
+            let tipoPago = document.querySelector('input[name="tipo_pago"]:checked').value;
             let grupoComprobante = document.getElementById("grupo-comprobante");
             if (tipoPago === "cliente") {
                 grupoComprobante.style.display = "block";
             } else {
                 grupoComprobante.style.display = "none";
             }
-        }
-
-        function enviarPenalesWhatsApp() {
-            let nombre = document.getElementById("penales-nombre").value.trim();
-            let correo = document.getElementById("penales-correo").value.trim();
-            let telefono = document.getElementById("penales-telefono").value.trim();
-            let nacimiento = document.getElementById("penales-Nacimiento").value;
-            let tipoPago = document.querySelector('input[name="tipo-pago-penales"]:checked').value;
-            let archivoInput = document.getElementById("penales-archivo");
-
-            if (!nombre || !correo || !telefono || !nacimiento) {
-                alert("Por favor completa todos los datos obligatorios del formulario.");
-                return;
-            }
-
-            if (tipoPago === "cliente" && archivoInput.files.length === 0) {
-                alert("Por favor adjunta la boleta de pago (imagen o PDF) que ya pagaste.");
-                return;
-            }
-
-            let mensaje = `Hola, deseo solicitar el trámite de *Antecedentes Penales*:%0A%0A`;
-            mensaje += `*Nombre:* ${nombre}%0A`;
-            mensaje += `*Correo:* ${correo}%0A`;
-            mensaje += `*Teléfono:* ${telefono}%0A`;
-            mensaje += `*Fecha de Nacimiento:* ${nacimiento}%0A`;
-
-            if (tipoPago === "nosotros") {
-                mensaje += `*Modalidad:* Nosotros pagamos la boleta%0A`;
-                mensaje += `*Costo Total:* Q40.00`;
-            } else {
-                let nombreArchivo = archivoInput.files[0] ? archivoInput.files[0].name : "Archivo adjunto";
-                mensaje += `*Modalidad:* Ya he pagado la boleta%0A`;
-                mensaje += `*Boleta Adjunta:* ${nombreArchivo} (Recuerda adjuntar tu archivo en el chat)%0A`;
-                mensaje += `*Costo de Gestión:* Q5.00`;
-            }
-
-            let numeroWhatsApp = "50242001925";
-            let url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`;
-            window.open(url, '_blank');
-            cerrarModalPenales();
         }
     </script>
 
