@@ -75,9 +75,7 @@ def registro_puntos():
   try:
     nombre_completo = request.form.get("nombre_completo", "").strip()
     correo = request.form.get("correo", "").strip().lower()
-    password = request.form.get(
-        "password", ""
-    ).strip()  # Contraseña en texto plano tal cual la escribe el usuario
+    password = request.form.get("password", "").strip()
     fecha_nacimiento_str = request.form.get("fecha_nacimiento", "").strip()
     telefono = request.form.get("telefono", "").strip()
     localidad = request.form.get("localidad", "").strip()
@@ -119,7 +117,7 @@ def registro_puntos():
         "serial_tarjeta": None,
         "nombre_completo": nombre_completo,
         "correo": correo,
-        "password": password,  # Se guarda la contraseña exacta escrita por el usuario
+        "password": password,
         "fecha_nacimiento": fecha_nacimiento_str,
         "telefono": telefono,
         "localidad": localidad,
@@ -163,19 +161,31 @@ def login_puntos():
     correo = request.form.get("correo", "").strip().lower()
     password = request.form.get("password", "").strip()
 
+    print(f"DEBUG LOGIN: Intentando iniciar sesión para -> Correo: '{correo}'")
+
     if not correo or not password:
+      print("DEBUG LOGIN: Correo o contraseña vacíos.")
       return redirect(url_for("pagina_login"))
 
     url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password,telefono,fecha_nacimiento,dpi,localidad,carrito_guardado"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
     resp = requests.get(url, headers=headers)
+    print(f"DEBUG LOGIN: Código de respuesta de Supabase: {resp.status_code}")
+
     if resp.status_code == 200:
       data = resp.json()
+      print(f"DEBUG LOGIN: Datos encontrados en Supabase: {data}")
       if data:
         cliente = data[0]
-        # Compara directamente la contraseña escrita con la almacenada en la base de datos
-        if cliente.get("password") == password:
+        pass_en_db = cliente.get("password", "")
+        print(
+            f"DEBUG LOGIN: Contraseña en BD: '{pass_en_db}' vs Contraseña"
+            f" escrita: '{password}'"
+        )
+
+        if pass_en_db == password:
+          print("DEBUG LOGIN: ¡Contraseña correcta! Iniciando sesión...")
           session.permanent = True
           session["cliente_puntos"] = {
               "nombre": cliente.get("nombre_completo"),
@@ -197,8 +207,15 @@ def login_puntos():
             session["carrito"] = []
 
           return redirect(url_for("index"))
+        else:
+          print("DEBUG LOGIN: Las contraseñas NO coinciden.")
+      else:
+        print("DEBUG LOGIN: No existe ningún usuario con ese correo en la tabla.")
+    else:
+      print(f"DEBUG LOGIN: Error en la consulta a Supabase: {resp.text}")
+
   except Exception as e:
-    print("Error en login puntos:", e)
+    print("Excepción crítica en login puntos:", e)
 
   return redirect(url_for("pagina_login"))
 
