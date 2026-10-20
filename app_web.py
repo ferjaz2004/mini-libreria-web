@@ -1,12 +1,16 @@
 from datetime import datetime
+import hashlib
 import json
 import os
 import random
 import re
 import requests
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 
 app = Flask(__name__)
+app.secret_key = os.urandom(
+    24
+)  # Necesario para manejar sesiones de clientes de puntos
 
 # --- CREDENCIALES DE SUPABASE (Nube) ---
 SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
@@ -43,9 +47,199 @@ def obtener_productos_db():
 def index():
   try:
     productos = obtener_productos_db()
-    return render_template("index.html", productos=productos)
+    cliente_actual = session.get(
+        "cliente_puntos"
+    )  # Opcional para mostrar si está logueado en puntos
+    return render_template(
+        "index.html", productos=productos, cliente_actual=cliente_actual
+    )
   except Exception as e:
     return f"Error al cargar la tienda: {e}"
+
+
+# --- RUTAS DE FIDELIZACIÓN: PUNTOS PEPEL & TINTA ---
+
+
+@app.route("/registro-puntos", methods=["POST"])
+def registro_puntos():
+  try:
+    nombre_completo = request.form.get("nombre_completo", "").strip()
+    correo = request.form.get("correo", "").strip().lower()
+    password = request.form.get("password", "").strip()
+    fecha_nacimiento_str = request.form.get("fecha_nacimiento", "").strip()
+    dpi = request.form.get("dpi", "").strip()
+    telefono = request.form.get("telefono", "").strip()
+
+    if not nombre_completo or not correo or not password or not fecha_nacimiento_str:
+      return "<h3>Error:</h3><p>Faltan campos obligatorios para el registro.</p><a href='/'>Regresar</a>"
+
+    # Validación estricta de edad
+    fecha_nac = datetime.strptime(fecha_nacimiento_str, "%Y-%m-%d")
+    hoy = datetime.now()
+    edad = (
+        hoy.year
+        - fecha_nac.year
+        - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+    )
+
+    if edad < 15:
+      return """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head><meta charset="UTF-8"><title>Registro Denegado</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+            <body class="bg-light text-center py-5">
+                <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
+                    <h3 class="text-danger">Registro no permitido</h3>
+                    <p class="mt-3">Lo sentimos, por motivos de cargos y responsabilidades legales, debes tener al menos 15 años cumplidos para unirte a <strong>Puntos Pepel & Tinta</strong>.</p>
+                    <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
+                </div>
+            </body>
+            </html>
+            """
+
+    # Regla de DPI según edad
+    if 15 <= edad <= 17:
+      dpi = ""  # Bloqueado / Vacío para menores de edad
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+
+    # Generar serial automático de 8 dígitos empezando en 10000000
+    url_serial = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
+    resp_serial = requests.get(url_serial, headers=headers)
+
+    nuevo_serial = "10000000"
+    if resp_serial.status_code == 200:
+      datos_ult = resp_serial.json()
+      if datos_ult:
+        ultimo_serial_str = datos_ult[0].get("serial_tarjeta", "10000000")
+        try:
+          nuevo_serial = str(int(ultimo_serial_str) + 1).zfill(8)
+        except:
+          pass
+
+    # Cifrar contraseña de forma segura (SHA-256)
+    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+    payload_cliente = {
+        "serial_tarjeta": nuevo_serial,
+        "nombre_completo": nombre_completo,
+        "correo": correo,
+        "password": password_hash,
+        "fecha_nacimiento": fecha_nacimiento_str,
+        "dpi": dpi,
+        "telefono": telefono,
+    }
+
+    resp_insert = requests.post(
+        f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion",
+        json=payload_cliente,
+        headers=headers,
+    )
+    if resp_insert.status_code not in [200, 201]:
+      return f"<h3>Error al registrar cliente:</h3><p>{resp_insert.text}</p><a href='/'>Regresar</a>"
+
+    return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8"><title>¡Bienvenido a Puntos Pepel & Tinta!</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+        <body class="bg-light text-center py-5">
+            <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #0d6efd; margin: auto;">
+                <h2 class="text-primary mb-3">¡Registro Exitoso!</h2>
+                <p class="lead">Te has unido exitosamente a <strong>Puntos Pepel & Tinta</strong>.</p>
+                <div class="alert alert-info">
+                    Tu número de tarjeta asignado es: <h3 class="text-dark"><strong>{nuevo_serial}</strong></h3>
+                </div>
+                <p>Guarda este número para acumular puntos en tus compras físicas o en línea.</p>
+                <a href="/" class="btn btn-primary w-100 mt-3">Ir a la Tienda</a>
+            </div>
+        </body>
+        </html>
+        """
+  except Exception as e:
+    return f"Error en el registro de puntos: {e}"
+
+
+@app.route("/login-puntos", methods=["POST"])
+def login_puntos():
+  try:
+    correo = request.form.get("correo", "").strip().lower()
+    password = request.form.get("password", "").strip()
+
+    if not correo or not password:
+      return redirect(url_for("index"))
+
+    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password"
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+
+    resp = requests.get(url, headers=headers)
+    if resp.status_code == 200:
+      data = resp.json()
+      if data:
+        cliente = data[0]
+        if cliente.get("password") == password_hash:
+          session["cliente_puntos"] = {
+              "nombre": cliente.get("nombre_completo"),
+              "serial": cliente.get("serial_tarjeta"),
+              "correo": correo,
+          }
+  except Exception as e:
+    print("Error en login puntos:", e)
+
+  return redirect(url_for("index"))
+
+
+@app.route("/logout-puntos")
+def logout_puntos():
+  session.pop("cliente_puntos", None)
+  return redirect(url_for("index"))
+
+
+@app.route("/eliminar-cuenta-puntos", methods=["POST"])
+def eliminar_cuenta_puntos():
+  try:
+    cliente = session.get("cliente_puntos")
+    if not cliente:
+      return redirect(url_for("index"))
+
+    correo = cliente.get("correo")
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    url_delete = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+    resp = requests.delete(url_delete, headers=headers)
+
+    if resp.status_code in [200, 204]:
+      session.pop("cliente_puntos", None)
+      return """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head><meta charset="UTF-8"><title>Cuenta Eliminada</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+            <body class="bg-light text-center py-5">
+                <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #ffc107; margin: auto;">
+                    <h3 class="text-warning">Cuenta Eliminada</h3>
+                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> y tus datos asociados han sido eliminados correctamente del sistema.</p>
+                    <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
+                </div>
+            </body>
+            </html>
+            """
+    else:
+      return f"Error al eliminar la cuenta: {resp.text}"
+  except Exception as e:
+    return f"Excepción al eliminar cuenta: {e}"
+
+
+# --- FIN RUTAS DE FIDELIZACIÓN ---
 
 
 @app.route("/crear-pedido", methods=["POST"])
