@@ -77,14 +77,13 @@ def registro_puntos():
     correo = request.form.get("correo", "").strip().lower()
     password = request.form.get("password", "").strip()
     fecha_nacimiento_str = request.form.get("fecha_nacimiento", "").strip()
-    dpi = request.form.get("dpi", "").strip()
     telefono = request.form.get("telefono", "").strip()
     localidad = request.form.get("localidad", "").strip()
 
     if not nombre_completo or not correo or not password or not fecha_nacimiento_str:
       return "<h3>Error:</h3><p>Faltan campos obligatorios para el registro.</p><a href='/registro'>Regresar</a>"
 
-    # Validación estricta de edad
+    # Validación estricta de edad (mínimo 15 años)
     fecha_nac = datetime.strptime(fecha_nacimiento_str, "%Y-%m-%d")
     hoy = datetime.now()
     edad = (
@@ -101,48 +100,32 @@ def registro_puntos():
             <body class="bg-light text-center py-5">
                 <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
                     <h3 class="text-danger">Registro no permitido</h3>
-                    <p class="mt-3">Lo sentimos, por motivos de cargos y responsabilidades legales, debes tener al menos 15 años cumplidos para unirte a <strong>Puntos Pepel & Tinta</strong>.</p>
+                    <p class="mt-3">Lo sentimos, debes tener al menos 15 años cumplidos para registrarte en <strong>Puntos Pepel & Tinta</strong>.</p>
                     <a href="/registro" class="btn btn-secondary mt-3">Regresar</a>
                 </div>
             </body>
             </html>
             """
 
-    if 15 <= edad <= 17:
-      dpi = ""
+    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type": "application/json",
-        "Prefer": "return=representation",
+        "Prefer": "return=minimal",
     }
 
-    # Generar serial automático de 8 dígitos empezando en 10000000
-    url_serial = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
-    resp_serial = requests.get(url_serial, headers=headers)
-
-    nuevo_serial = "10000000"
-    if resp_serial.status_code == 200:
-      datos_ult = resp_serial.json()
-      if datos_ult:
-        ultimo_serial_str = datos_ult[0].get("serial_tarjeta", "10000000")
-        try:
-          nuevo_serial = str(int(ultimo_serial_str) + 1).zfill(8)
-        except:
-          pass
-
-    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-
+    # Registro limpio SIN crear tarjeta en automático
     payload_cliente = {
-        "serial_tarjeta": nuevo_serial,
+        "serial_tarjeta": None,
         "nombre_completo": nombre_completo,
         "correo": correo,
         "password": password_hash,
         "fecha_nacimiento": fecha_nacimiento_str,
-        "dpi": dpi,
         "telefono": telefono,
         "localidad": localidad,
+        "dpi": "",
     }
 
     resp_insert = requests.post(
@@ -154,7 +137,7 @@ def registro_puntos():
       return f"<h3>Error al registrar cliente:</h3><p>{resp_insert.text}</p><a href='/registro'>Regresar</a>"
 
     # Pantalla de éxito con redirección automática en 10 segundos a /login
-    return f"""
+    return """
         <!DOCTYPE html>
         <html lang="es">
         <head>
@@ -167,9 +150,6 @@ def registro_puntos():
             <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #10b981; margin: auto;">
                 <h2 class="text-success mb-3">¡Registrado Exitosamente!</h2>
                 <p class="lead">Te has unido a <strong>Puntos Pepel & Tinta</strong>.</p>
-                <div class="alert alert-info">
-                    Tu número de tarjeta asignado es: <h3 class="text-dark"><strong>{nuevo_serial}</strong></h3>
-                </div>
                 <p>Serás redirigido a la página de inicio de sesión en <strong>10 segundos</strong>...</p>
                 <a href="/login" class="btn btn-primary w-100 mt-3">Ir a Iniciar Sesión Ahora</a>
             </div>
@@ -191,7 +171,7 @@ def login_puntos():
 
     password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password,telefono,fecha_nacimiento,dpi,localidad"
+    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password,telefono,fecha_nacimiento,dpi,localidad,carrito_guardado"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
     resp = requests.get(url, headers=headers)
@@ -209,6 +189,16 @@ def login_puntos():
               "dpi": cliente.get("dpi", ""),
               "localidad": cliente.get("localidad", ""),
           }
+          # Restaurar carrito guardado si existe en la cuenta
+          carrito_previo = cliente.get("carrito_guardado")
+          if carrito_previo:
+            try:
+              session["carrito"] = json.loads(carrito_previo)
+            except:
+              session["carrito"] = []
+          else:
+            session["carrito"] = []
+
           return redirect(url_for("index"))
   except Exception as e:
     print("Error en login puntos:", e)
@@ -218,8 +208,82 @@ def login_puntos():
 
 @app.route("/logout-puntos")
 def logout_puntos():
+  # Guardar carrito en Supabase antes de limpiar la sesión
+  cliente = session.get("cliente_puntos")
+  carrito_actual = session.get("carrito", [])
+  if cliente:
+    try:
+      headers = {
+          "apikey": SUPABASE_KEY,
+          "Authorization": f"Bearer {SUPABASE_KEY}",
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+      }
+      url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(cliente.get('correo'))}"
+      requests.patch(
+          url_upd,
+          json={"carrito_guardado": json.dumps(carrito_actual)},
+          headers=headers,
+      )
+    except Exception as e:
+      print("Error al guardar carrito en logout:", e)
+
   session.pop("cliente_puntos", None)
+  session.pop("carrito", None)
   return redirect(url_for("index"))
+
+
+@app.route("/puntos-pepel-tinta")
+def puntos_pepel_tinta():
+  cliente = session.get("cliente_puntos")
+  if not cliente:
+    return redirect(url_for("pagina_login"))
+  return render_template("puntos.html", cliente=cliente)
+
+
+@app.route("/generar-tarjeta-online", methods=["POST"])
+def generar_tarjeta_online():
+  try:
+    cliente = session.get("cliente_puntos")
+    if not cliente:
+      return redirect(url_for("pagina_login"))
+
+    correo = cliente.get("correo")
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+
+    # Generar serial automático secuencial de 8 dígitos empezando en 10000000
+    url_serial = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
+    resp_serial = requests.get(url_serial, headers=headers)
+
+    nuevo_serial = "10000000"
+    if resp_serial.status_code == 200:
+      datos_ult = resp_serial.json()
+      if datos_ult:
+        ultimo_serial_str = datos_ult[0].get("serial_tarjeta")
+        if ultimo_serial_str:
+          try:
+            nuevo_serial = str(int(ultimo_serial_str) + 1).zfill(8)
+          except:
+            pass
+
+    url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+    resp_upd = requests.patch(
+        url_upd, json={"serial_tarjeta": nuevo_serial}, headers=headers
+    )
+
+    if resp_upd.status_code in [200, 204]:
+      cliente["serial"] = nuevo_serial
+      session["cliente_puntos"] = cliente
+
+    return redirect(url_for("puntos_pepel_tinta"))
+  except Exception as e:
+    print("Error al generar tarjeta online:", e)
+    return redirect(url_for("puntos_pepel_tinta"))
 
 
 @app.route("/actualizar-cuenta", methods=["POST"])
@@ -295,7 +359,7 @@ def enlazar_tarjeta():
           return """
                     <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                     <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                    <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta de usuario.</p><a href='/' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                    <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta de usuario.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                     """
         else:
           url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
@@ -308,12 +372,12 @@ def enlazar_tarjeta():
         return """
                 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                 <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta ingresado no existe en el sistema local.</p><a href='/' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta ingresado no existe en el sistema local.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                 """
   except Exception as e:
     print("Error al enlazar tarjeta:", e)
 
-  return redirect(url_for("index"))
+  return redirect(url_for("puntos_pepel_tinta"))
 
 
 @app.route("/eliminar-cuenta-puntos", methods=["POST"])
@@ -342,7 +406,7 @@ def eliminar_cuenta_puntos():
             <body class="bg-light text-center py-5">
                 <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #ffc107; margin: auto;">
                     <h3 class="text-warning">Cuenta Eliminada</h3>
-                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> y tus datos asociados han sido eliminados correctamente del sistema.</p>
+                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> y tus datos asociados han sido eliminados correctamente.</p>
                     <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
                 </div>
             </body>
