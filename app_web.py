@@ -8,7 +8,7 @@ import requests
 from flask import Flask, redirect, render_template, request, session, url_for
 
 app = Flask(__name__)
-# Llave secreta fija para evitar que las sesiones se borren al reiniciarse en Render
+# Llave secreta fija para mantener las sesiones activas en Render
 app.secret_key = "clave_secreta_super_segura_para_mini_libreria_2026_xyz"
 
 # --- CREDENCIALES DE SUPABASE (Nube) ---
@@ -84,7 +84,6 @@ def registro_puntos():
     if not nombre_completo or not correo or not password or not fecha_nacimiento_str:
       return "<h3>Error:</h3><p>Faltan campos obligatorios para el registro.</p><a href='/registro'>Regresar</a>"
 
-    # Validación estricta de edad (mínimo 15 años)
     fecha_nac = datetime.strptime(fecha_nacimiento_str, "%Y-%m-%d")
     hoy = datetime.now()
     edad = (
@@ -117,7 +116,6 @@ def registro_puntos():
         "Prefer": "return=minimal",
     }
 
-    # Registro limpio SIN crear tarjeta en automático
     payload_cliente = {
         "serial_tarjeta": None,
         "nombre_completo": nombre_completo,
@@ -137,7 +135,6 @@ def registro_puntos():
     if resp_insert.status_code not in [200, 201]:
       return f"<h3>Error al registrar cliente:</h3><p>{resp_insert.text}</p><a href='/registro'>Regresar</a>"
 
-    # Pantalla de éxito con redirección automática en 10 segundos a /login
     return """
         <!DOCTYPE html>
         <html lang="es">
@@ -145,13 +142,13 @@ def registro_puntos():
             <meta charset="UTF-8">
             <title>Registrado Exitosamente</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <meta http-equiv="refresh" content="10;url=/login">
+            <meta http-equiv="refresh" content="5;url=/login">
         </head>
         <body class="bg-light text-center py-5">
             <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #10b981; margin: auto;">
                 <h2 class="text-success mb-3">¡Registrado Exitosamente!</h2>
                 <p class="lead">Te has unido a <strong>Puntos Pepel & Tinta</strong>.</p>
-                <p>Serás redirigido a la página de inicio de sesión en <strong>10 segundos</strong>...</p>
+                <p>Serás redirigido al inicio de sesión en unos segundos...</p>
                 <a href="/login" class="btn btn-primary w-100 mt-3">Ir a Iniciar Sesión Ahora</a>
             </div>
         </body>
@@ -181,6 +178,7 @@ def login_puntos():
       if data:
         cliente = data[0]
         if cliente.get("password") == password_hash:
+          session.permanent = True
           session["cliente_puntos"] = {
               "nombre": cliente.get("nombre_completo"),
               "serial": cliente.get("serial_tarjeta"),
@@ -190,7 +188,7 @@ def login_puntos():
               "dpi": cliente.get("dpi", ""),
               "localidad": cliente.get("localidad", ""),
           }
-          # Restaurar carrito guardado si existe en la cuenta
+
           carrito_previo = cliente.get("carrito_guardado")
           if carrito_previo:
             try:
@@ -358,7 +356,7 @@ def enlazar_tarjeta():
           return """
                     <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                     <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                    <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta de usuario.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                    <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                     """
         else:
           url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
@@ -371,7 +369,7 @@ def enlazar_tarjeta():
         return """
                 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                 <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta ingresado no existe en el sistema local.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta no existe en el sistema.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                 """
   except Exception as e:
     print("Error al enlazar tarjeta:", e)
@@ -405,7 +403,7 @@ def eliminar_cuenta_puntos():
             <body class="bg-light text-center py-5">
                 <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #ffc107; margin: auto;">
                     <h3 class="text-warning">Cuenta Eliminada</h3>
-                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> y tus datos asociados han sido eliminados correctamente.</p>
+                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> ha sido eliminada correctamente.</p>
                     <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
                 </div>
             </body>
@@ -616,7 +614,7 @@ def crear_tramite_web():
         f"{SUPABASE_URL}/rest/v1/tramites", json=payload, headers=headers
     )
     if resp_db.status_code not in [200, 201]:
-      return f"<h3>Error al guardar en la Base de Datos (Tabla tramites):</h3><p>Código {resp_db.status_code}: {resp_db.text}</p><a href='/tramites-en-linea'>Regresar</a>"
+      return f"<h3>Error al guardar en la Base de Datos:</h3><p>{resp_db.text}</p><a href='/tramites-en-linea'>Regresar</a>"
 
     mensaje_wa = (
         f"Hola, he solicitado el trámite de *Antecedentes Penales* en"
