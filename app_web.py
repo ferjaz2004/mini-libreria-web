@@ -57,6 +57,16 @@ def terminos():
   return render_template("terminos.html")
 
 
+@app.route("/registro")
+def pagina_registro():
+  return render_template("registro.html")
+
+
+@app.route("/login")
+def pagina_login():
+  return render_template("login.html")
+
+
 # --- RUTAS DE FIDELIZACIÓN: PUNTOS PEPEL & TINTA ---
 
 
@@ -72,7 +82,7 @@ def registro_puntos():
     localidad = request.form.get("localidad", "").strip()
 
     if not nombre_completo or not correo or not password or not fecha_nacimiento_str:
-      return "<h3>Error:</h3><p>Faltan campos obligatorios para el registro.</p><a href='/'>Regresar</a>"
+      return "<h3>Error:</h3><p>Faltan campos obligatorios para el registro.</p><a href='/registro'>Regresar</a>"
 
     # Validación estricta de edad
     fecha_nac = datetime.strptime(fecha_nacimiento_str, "%Y-%m-%d")
@@ -92,7 +102,7 @@ def registro_puntos():
                 <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
                     <h3 class="text-danger">Registro no permitido</h3>
                     <p class="mt-3">Lo sentimos, por motivos de cargos y responsabilidades legales, debes tener al menos 15 años cumplidos para unirte a <strong>Puntos Pepel & Tinta</strong>.</p>
-                    <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
+                    <a href="/registro" class="btn btn-secondary mt-3">Regresar</a>
                 </div>
             </body>
             </html>
@@ -141,19 +151,31 @@ def registro_puntos():
         headers=headers,
     )
     if resp_insert.status_code not in [200, 201]:
-      return f"<h3>Error al registrar cliente:</h3><p>{resp_insert.text}</p><a href='/'>Regresar</a>"
+      return f"<h3>Error al registrar cliente:</h3><p>{resp_insert.text}</p><a href='/registro'>Regresar</a>"
 
-    session["cliente_puntos"] = {
-        "nombre": nombre_completo,
-        "serial": nuevo_serial,
-        "correo": correo,
-        "telefono": telefono,
-        "fecha_nacimiento": fecha_nacimiento_str,
-        "dpi": dpi,
-        "localidad": localidad,
-    }
-
-    return redirect(url_for("index"))
+    # Pantalla de éxito con redirección automática en 10 segundos a /login
+    return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Registrado Exitosamente</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <meta http-equiv="refresh" content="10;url=/login">
+        </head>
+        <body class="bg-light text-center py-5">
+            <div class="container card p-5 shadow" style="max-width: 600px; border-top: 5px solid #10b981; margin: auto;">
+                <h2 class="text-success mb-3">¡Registrado Exitosamente!</h2>
+                <p class="lead">Te has unido a <strong>Puntos Pepel & Tinta</strong>.</p>
+                <div class="alert alert-info">
+                    Tu número de tarjeta asignado es: <h3 class="text-dark"><strong>{nuevo_serial}</strong></h3>
+                </div>
+                <p>Serás redirigido a la página de inicio de sesión en <strong>10 segundos</strong>...</p>
+                <a href="/login" class="btn btn-primary w-100 mt-3">Ir a Iniciar Sesión Ahora</a>
+            </div>
+        </body>
+        </html>
+        """
   except Exception as e:
     return f"Error en el registro de puntos: {e}"
 
@@ -165,7 +187,7 @@ def login_puntos():
     password = request.form.get("password", "").strip()
 
     if not correo or not password:
-      return redirect(url_for("index"))
+      return redirect(url_for("pagina_login"))
 
     password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
@@ -187,10 +209,11 @@ def login_puntos():
               "dpi": cliente.get("dpi", ""),
               "localidad": cliente.get("localidad", ""),
           }
+          return redirect(url_for("index"))
   except Exception as e:
     print("Error en login puntos:", e)
 
-  return redirect(url_for("index"))
+  return redirect(url_for("pagina_login"))
 
 
 @app.route("/logout-puntos")
@@ -238,7 +261,6 @@ def actualizar_cuenta():
       cliente["localidad"] = localidad
       cliente["dpi"] = dpi
       session["cliente_puntos"] = cliente
-
   except Exception as e:
     print("Error al actualizar cuenta:", e)
 
@@ -262,7 +284,6 @@ def enlazar_tarjeta():
         "Prefer": "return=representation",
     }
 
-    # Verificar si la tarjeta existe en la base de datos
     url_check = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=correo"
     resp_check = requests.get(url_check, headers=headers)
 
@@ -270,7 +291,6 @@ def enlazar_tarjeta():
       data_tarj = resp_check.json()
       if data_tarj:
         propietario_actual = data_tarj[0].get("correo")
-        # Validar que la tarjeta no esté asignada a otra cuenta
         if propietario_actual and propietario_actual != correo:
           return """
                     <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
@@ -278,7 +298,6 @@ def enlazar_tarjeta():
                     <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta de usuario.</p><a href='/' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                     """
         else:
-          # Actualizar el serial para este usuario
           url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
           requests.patch(
               url_upd, json={"serial_tarjeta": serial_existente}, headers=headers
