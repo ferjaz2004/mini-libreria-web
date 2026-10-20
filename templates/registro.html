@@ -8,18 +8,19 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
         .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
         .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .navbar h2 a { color: #38bdf8; text-decoration: none; }
         .nav-links a { color: #e2e8f0; text-decoration: none; font-weight: 600; font-size: 15px; margin-left: 20px; }
         .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         h2 { color: #1e293b; margin-top: 0; text-align: center; }
         .client-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; }
-        .btn-submit { background-color: #0d6efd; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; }
-        .btn-submit:hover { background-color: #0b5ed7; }
+        .btn-submit { background-color: #10b981; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; }
+        .btn-submit:hover { background-color: #059669; }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <h2>📚 Mini Librería Guatemala</h2>
+        <h2><a href="/">📚 Mini Librería Guatemala</a></h2>
         <div class="nav-links">
             <a href="/">Tienda</a>
             <a href="/login">Ingresar</a>
@@ -41,26 +42,31 @@
             <input type="password" name="password" class="client-input" required>
             
             <label>Fecha de Nacimiento:</label>
-            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="client-input" onchange="verificarEdadDpi()" required>
+            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="client-input" required>
             <small style="color: #64748b; display: block; margin-bottom: 10px;">Debes tener al menos 15 años cumplidos.</small>
-            
-            <label>Número de DPI <span id="label-dpi-status" style="font-weight:normal; color:#e11d48;">(Obligatorio mayores de 18)</span>:</label>
-            <input type="text" id="dpi_input" name="dpi" class="client-input" placeholder="Ingresa tu DPI si eres mayor de edad...">
             
             <label>Número de Teléfono:</label>
             <input type="text" name="telefono" class="client-input" required>
 
-            <label>Localidad / Dirección:</label>
-            <input type="text" name="localidad" class="client-input" placeholder="Ciudad, Zona, Municipio..." required>
+            <label>Localidad:</label>
+            <select name="localidad" class="client-input" required>
+                <option value="" disabled selected>Selecciona tu localidad...</option>
+                <option value="Antigua Guatemala">Antigua Guatemala</option>
+                <option value="Ciudad Vieja">Ciudad Vieja</option>
+                <option value="San Miguel Dueñas">San Miguel Dueñas</option>
+                <option value="San Antonio Aguas Calientes">San Antonio Aguas Calientes</option>
+                <option value="Santa Catarina Barahona">Santa Catarina Barahona</option>
+                <option value="Alotenango">Alotenango</option>
+            </select>
             
-            <button type="submit" class="btn-submit">Registrarme y Obtener Tarjeta</button>
+            <button type="submit" class="btn-submit">Registrarse</button>
         </form>
     </div>
 
     <script>
-        function verificarEdadDpi() {
+        function validarEdadRegistro() {
             let fechaNacVal = document.getElementById("fecha_nacimiento").value;
-            if (!fechaNacVal) return;
+            if (!fechaNacVal) return false;
 
             let hoy = new Date();
             let nacimiento = new Date(fechaNacVal);
@@ -69,42 +75,9 @@
             if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
                 edad--;
             }
-
-            let dpiInput = document.getElementById("dpi_input");
-            let labelDpi = document.getElementById("label-dpi-status");
 
             if (edad < 15) {
                 alert("Lo sentimos, debes tener al menos 15 años cumplidos para registrarte.");
-                document.getElementById("fecha_nacimiento").value = "";
-                dpiInput.disabled = false;
-                dpiInput.value = "";
-                return;
-            }
-
-            if (edad >= 15 && edad <= 17) {
-                dpiInput.value = "";
-                dpiInput.disabled = true;
-                dpiInput.placeholder = "No requerido (Menor de edad entre 15-17)";
-                labelDpi.innerText = "(Bloqueado para menores de 18)";
-            } else {
-                dpiInput.disabled = false;
-                dpiInput.placeholder = "Ingresa tu número de DPI...";
-                labelDpi.innerText = "(Obligatorio)";
-            }
-        }
-
-        function validarEdadRegistro() {
-            let fechaNacVal = document.getElementById("fecha_nacimiento").value;
-            let hoy = new Date();
-            let nacimiento = new Date(fechaNacVal);
-            let edad = hoy.getFullYear() - nacimiento.getFullYear();
-            let m = hoy.getMonth() - nacimiento.getMonth();
-            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-                edad--;
-            }
-
-            if (edad < 15) {
-                alert("Registro denegado: Menores de 15 años no permitidos.");
                 return false;
             }
             return true;
