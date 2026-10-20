@@ -15,7 +15,7 @@
         .btn-accion { background-color: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
         .btn-accion:hover { background-color: #7dd3fc; }
 
-        /* Menú desplegable de 3 rayitas (Hamburguesa) */
+        /* Menú desplegable de 3 rayitas (Siempre visible) */
         .dropdown { position: relative; display: inline-block; }
         .dropbtn { background-color: #0f172a; color: white; padding: 8px 14px; font-size: 16px; border: 1px solid #334155; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
         .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 100; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; }
@@ -51,25 +51,32 @@
             <a href="/rastreo">Rastreo de Trámites</a>
             <a href="/terminos">Términos y Condiciones</a>
 
-            <!-- Menú Desplegable o Botones -->
-            {% if cliente_actual %}
-                <div class="dropdown">
-                    <button onclick="toggleMenu()" class="dropbtn">☰ <span>{{ cliente_actual.nombre }}</span></button>
-                    <div id="userDropdown" class="dropdown-content">
+            <!-- MENÚ DE LAS 3 RAYITAS SIEMPRE VISIBLE -->
+            <div class="dropdown">
+                <button onclick="toggleMenu()" class="dropbtn">☰ 
+                    <span>
+                        {% if cliente_actual %}
+                            {{ cliente_actual.nombre }}
+                        {% else %}
+                            Menú Puntos
+                        {% endif %}
+                    </span>
+                </button>
+                <div id="userDropdown" class="dropdown-content">
+                    {% if cliente_actual %}
                         <div class="dropdown-item" style="background: #f1f5f9; font-weight: bold; color: #0f172a;">⭐ Tarj: {{ cliente_actual.serial }}</div>
                         <div class="dropdown-item" onclick="abrirModal('modal-cuenta')">👤 Cuenta (Editar Datos)</div>
                         <div class="dropdown-item" onclick="abrirModal('modal-pedidos')">📦 Mis Pedidos y Puntos</div>
                         <div class="dropdown-item" onclick="abrirModal('modal-tarjeta')">💳 Tarjeta Papel & Tinta</div>
                         <a href="/terminos">📄 Términos y Condiciones</a>
                         <a href="/logout-puntos" style="color: #ef4444; font-weight: bold;">🚪 Cerrar Sesión</a>
-                    </div>
+                    {% else %}
+                        <a href="/login" style="font-weight: bold; color: #0284c7;">🔑 Iniciar Sesión</a>
+                        <a href="/registro" style="font-weight: bold; color: #10b981;">📝 Registrarse</a>
+                        <a href="/terminos">📄 Términos y Condiciones</a>
+                    {% endif %}
                 </div>
-            {% else %}
-                <div style="display: flex; gap: 8px;">
-                    <a href="/login" class="btn-accion">Ingresar</a>
-                    <a href="/registro" class="btn-accion" style="background: #10b981; color: white;">Registrarse</a>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 
