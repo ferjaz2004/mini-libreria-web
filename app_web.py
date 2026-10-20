@@ -1,5 +1,4 @@
 from datetime import datetime
-import hashlib
 import json
 import os
 import random
@@ -76,7 +75,9 @@ def registro_puntos():
   try:
     nombre_completo = request.form.get("nombre_completo", "").strip()
     correo = request.form.get("correo", "").strip().lower()
-    password = request.form.get("password", "").strip()
+    password = request.form.get(
+        "password", ""
+    ).strip()  # Contraseña en texto plano tal cual la escribe el usuario
     fecha_nacimiento_str = request.form.get("fecha_nacimiento", "").strip()
     telefono = request.form.get("telefono", "").strip()
     localidad = request.form.get("localidad", "").strip()
@@ -107,8 +108,6 @@ def registro_puntos():
             </html>
             """
 
-    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -120,7 +119,7 @@ def registro_puntos():
         "serial_tarjeta": None,
         "nombre_completo": nombre_completo,
         "correo": correo,
-        "password": password_hash,
+        "password": password,  # Se guarda la contraseña exacta escrita por el usuario
         "fecha_nacimiento": fecha_nacimiento_str,
         "telefono": telefono,
         "localidad": localidad,
@@ -167,8 +166,6 @@ def login_puntos():
     if not correo or not password:
       return redirect(url_for("pagina_login"))
 
-    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-
     url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password,telefono,fecha_nacimiento,dpi,localidad,carrito_guardado"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
@@ -177,7 +174,8 @@ def login_puntos():
       data = resp.json()
       if data:
         cliente = data[0]
-        if cliente.get("password") == password_hash:
+        # Compara directamente la contraseña escrita con la almacenada en la base de datos
+        if cliente.get("password") == password:
           session.permanent = True
           session["cliente_puntos"] = {
               "nombre": cliente.get("nombre_completo"),
