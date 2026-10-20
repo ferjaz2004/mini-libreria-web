@@ -37,7 +37,6 @@
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position: absolute; right: 15px; top: 10px; font-size: 22px; cursor: pointer; color: #64748b; }
         
-        /* Contador flotante en el menú */
         .cart-badge { background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; margin-left: 5px; }
     </style>
 </head>
@@ -65,13 +64,15 @@
                         🛒 Ver Carrito <span id="cart-counter" class="cart-badge">0</span>
                     </div>
                     {% if cliente_actual %}
-                        <div class="dropdown-item" style="background: #f1f5f9; font-weight: bold; color: #0f172a;">⭐ Tarj: {{ cliente_actual.serial }}</div>
+                        <div class="dropdown-item" onclick="window.location.href='/puntos-pepel-tinta'" style="font-weight: bold; color: #0284c7; background: #f0f9ff;">
+                            ⭐ Puntos Pepel & Tinta
+                        </div>
                         <div class="dropdown-item" onclick="abrirModal('modal-cuenta')">👤 Cuenta (Editar Datos)</div>
                         <div class="dropdown-item" onclick="abrirModal('modal-pedidos')">📦 Mis Pedidos y Puntos</div>
-                        <div class="dropdown-item" onclick="abrirModal('modal-tarjeta')">💳 Tarjeta Papel & Tinta</div>
                         <a href="/terminos">📄 Términos y Condiciones</a>
                         <a href="/logout-puntos" style="color: #ef4444; font-weight: bold;">🚪 Cerrar Sesión</a>
                     {% else %}
+                        <a href="/puntos-pepel-tinta" style="font-weight: bold; color: #0284c7;">⭐ Puntos Pepel & Tinta</a>
                         <a href="/login" style="font-weight: bold; color: #0284c7;">🔑 Iniciar Sesión</a>
                         <a href="/registro" style="font-weight: bold; color: #10b981;">📝 Registrarse</a>
                         <a href="/terminos">📄 Términos y Condiciones</a>
@@ -117,8 +118,15 @@
                 <label>Fecha de Nacimiento:</label>
                 <input type="date" name="fecha_nacimiento" class="client-input" value="{{ cliente_actual.fecha_nacimiento }}">
 
-                <label>Localidad / Dirección:</label>
-                <input type="text" name="localidad" class="client-input" value="{{ cliente_actual.localidad }}">
+                <label>Localidad:</label>
+                <select name="localidad" class="client-input" required>
+                    <option value="Antigua Guatemala" {% if cliente_actual.localidad == 'Antigua Guatemala' %}selected{% endif %}>Antigua Guatemala</option>
+                    <option value="Ciudad Vieja" {% if cliente_actual.localidad == 'Ciudad Vieja' %}selected{% endif %}>Ciudad Vieja</option>
+                    <option value="San Miguel Dueñas" {% if cliente_actual.localidad == 'San Miguel Dueñas' %}selected{% endif %}>San Miguel Dueñas</option>
+                    <option value="San Antonio Aguas Calientes" {% if cliente_actual.localidad == 'San Antonio Aguas Calientes' %}selected{% endif %}>San Antonio Aguas Calientes</option>
+                    <option value="Santa Catarina Barahona" {% if cliente_actual.localidad == 'Santa Catarina Barahona' %}selected{% endif %}>Santa Catarina Barahona</option>
+                    <option value="Alotenango" {% if cliente_actual.localidad == 'Alotenango' %}selected{% endif %}>Alotenango</option>
+                </select>
 
                 <label>Número de DPI:</label>
                 <input type="text" name="dpi" class="client-input" value="{{ cliente_actual.dpi }}">
@@ -137,30 +145,11 @@
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal('modal-pedidos')">&times;</span>
             <h3 style="color: #1e293b; margin-top:0;">Mis Pedidos & Puntos Ganados</h3>
-            <p style="font-size: 14px; color: #64748b;">Historial de compras asociadas a tu tarjeta <strong>{{ cliente_actual.serial }}</strong>.</p>
+            <p style="font-size: 14px; color: #64748b;">Historial de compras asociadas a tu cuenta.</p>
             <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; color: #0369a1; font-size: 14px;">
                 ⭐ Cuenta sincronizada con éxito. Cada compra acumula puntos automáticamente en el sistema central de la librería.
             </div>
             <button class="btn-comprar" onclick="cerrarModal('modal-pedidos')" style="margin-top: 15px;">Cerrar</button>
-        </div>
-    </div>
-
-    <!-- MODAL 3: TARJETA PAPEL & TINTA -->
-    <div id="modal-tarjeta" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="cerrarModal('modal-tarjeta')">&times;</span>
-            <h3 style="color: #1e293b; margin-top:0;">Tarjeta Puntos Pepel & Tinta</h3>
-            <div style="text-align: center; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px dashed #cbd5e1; margin-bottom: 15px;">
-                <p style="margin: 0; font-size: 13px; color: #64748b;">Tu tarjeta actual:</p>
-                <h2 style="color: #0284c7; margin: 10px 0;">{{ cliente_actual.serial }}</h2>
-            </div>
-            <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 15px;">¿Tienes una tarjeta física creada en nuestro local?</h4>
-            <p style="font-size: 13px; color: #64748b;">Enlázala ingresando su número (recuerda que una tarjeta solo puede pertenecer a una cuenta).</p>
-            <form action="/enlazar-tarjeta" method="POST">
-                <label>Número de Tarjeta Existente (8 dígitos):</label>
-                <input type="text" name="serial_existente" class="client-input" placeholder="Ej. 10000005" required>
-                <button type="submit" class="btn-comprar" style="background: #3b82f6; margin-top: 5px;">Enlazar Tarjeta</button>
-            </form>
         </div>
     </div>
     {% endif %}
@@ -222,10 +211,8 @@
         }
 
         function abrirModal(modalId) {
-            // Cierra el menú desplegable si está abierto
             let dropdown = document.getElementById("userDropdown");
             if (dropdown) dropdown.classList.remove('show');
-
             document.getElementById(modalId).style.display = 'flex';
         }
 

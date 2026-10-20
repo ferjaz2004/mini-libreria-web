@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puntos Pepel & Tinta - Mini Librería</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
+        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .navbar h2 a { color: #38bdf8; text-decoration: none; }
+        .container { max-width: 600px; margin: 40px auto; background: white; padding: 35px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }
+        h2 { color: #1e293b; margin-top: 0; }
+        .info-box { background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0; font-size: 15px; color: #334155; line-height: 1.6; }
+        .card-box { background: #e0f2fe; border: 2px dashed #0284c7; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .client-input { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        .btn-main { background-color: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; margin-top: 10px; text-decoration: none; display: inline-block; }
+        .btn-main:hover { background-color: #059669; }
+        .btn-blue { background-color: #0284c7; }
+        .btn-blue:hover { background-color: #0369a1; }
+        .section-form { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2><a href="/">📚 Mini Librería Guatemala</a></h2>
+        <div>
+            <a href="/" style="color: #e2e8f0; text-decoration: none; font-weight: 600;">Regresar a la Tienda</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Puntos Pepel & Tinta</h2>
+        
+        <div class="info-box">
+            <p style="margin: 0; font-weight: 500;">
+                Bienvenido a <strong>Puntos Pepel & Tinta</strong>, la única librería en Alotenango que premia tu lealtad.
+            </p>
+            <p style="margin-top: 10px; margin-bottom: 0;">
+                Por cada <strong>Q1</strong> en compras equivale a <strong>1 punto</strong> que puedes canjear por productos de nuestra librería.
+            </p>
+        </div>
+
+        {% if cliente.serial %}
+            <div class="card-box">
+                <p style="margin: 0; font-size: 14px; color: #0369a1;">Tu tarjeta de lealtad activa:</p>
+                <h1 style="color: #0284c7; margin: 10px 0;">{{ cliente.serial }}</h1>
+                <p style="margin: 0; font-size: 13px; color: #64748b;">Estado: Vinculada y acumulando puntos.</p>
+            </div>
+        {% else %}
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+                <!-- Opción 1: Obtener Tarjeta Online -->
+                <form action="/generar-tarjeta-online" method="POST">
+                    <button type="submit" class="btn-main">⭐ Obtener tarjeta Papel & Tinta (Crear Online)</button>
+                </form>
+
+                <!-- Opción 2: Enlazar Tarjeta Física Existente -->
+                <div class="section-form">
+                    <h4 style="margin: 0 0 10px 0; color: #1e293b;">¿Ya tengo tarjeta Papel & Tinta?</h4>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">Enlázala ingresando su número de 8 dígitos:</p>
+                    <form action="/enlazar-tarjeta" method="POST">
+                        <input type="text" name="serial_existente" class="client-input" placeholder="Ej. 10000000" required>
+                        <button type="submit" class="btn-main btn-blue">Enlazar Tarjeta Física</button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
