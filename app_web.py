@@ -8,7 +8,8 @@ import requests
 from flask import Flask, redirect, render_template, request, session, url_for
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+# Llave secreta fija para evitar que las sesiones se borren al reiniciarse en Render
+app.secret_key = "clave_secreta_super_segura_para_mini_libreria_2026_xyz"
 
 # --- CREDENCIALES DE SUPABASE (Nube) ---
 SUPABASE_URL = "https://hvqtvrlgvbesirifaija.supabase.co"
@@ -208,7 +209,6 @@ def login_puntos():
 
 @app.route("/logout-puntos")
 def logout_puntos():
-  # Guardar carrito en Supabase antes de limpiar la sesión
   cliente = session.get("cliente_puntos")
   carrito_actual = session.get("carrito", [])
   if cliente:
@@ -256,7 +256,6 @@ def generar_tarjeta_online():
         "Prefer": "return=representation",
     }
 
-    # Generar serial automático secuencial de 8 dígitos empezando en 10000000
     url_serial = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
     resp_serial = requests.get(url_serial, headers=headers)
 
@@ -416,9 +415,6 @@ def eliminar_cuenta_puntos():
     print("Excepción al eliminar cuenta:", e)
 
   return redirect(url_for("index"))
-
-
-# --- FIN RUTAS DE FIDELIZACIÓN ---
 
 
 @app.route("/crear-pedido", methods=["POST"])
