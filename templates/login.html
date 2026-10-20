@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Puntos Pepel & Tinta</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
+        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .nav-links a { color: #e2e8f0; text-decoration: none; font-weight: 600; font-size: 15px; margin-left: 20px; }
+        .container { max-width: 400px; margin: 60px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { color: #1e293b; margin-top: 0; text-align: center; }
+        .client-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        .btn-submit { background-color: #10b981; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; }
+        .btn-submit:hover { background-color: #059669; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2>📚 Mini Librería Guatemala</h2>
+        <div class="nav-links">
+            <a href="/">Tienda</a>
+            <a href="/registro">Registrarse</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Iniciar Sesión</h2>
+        <form action="/login-puntos" method="POST">
+            <label>Correo Electrónico:</label>
+            <input type="email" name="correo" class="client-input" required>
+            
+            <label>Contraseña:</label>
+            <input type="password" name="password" class="client-input" required>
+            
+            <button type="submit" class="btn-submit">Entrar</button>
+        </form>
+    </div>
+
+</body>
+</html>
