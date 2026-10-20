@@ -6,16 +6,23 @@
     <title>TIENDA - Mini Librería y Servicios</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
-        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .navbar { background-color: #1e293b; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; position: relative; }
         .navbar h2 { margin: 0; font-size: 20px; color: #38bdf8; }
         .nav-links { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .nav-links a { color: #e2e8f0; text-decoration: none; font-weight: 600; font-size: 15px; }
         .nav-links a:hover { color: #38bdf8; }
         
-        /* Estilos del widget de Puntos Pepel & Tinta */
-        .puntos-widget { background: #0f172a; padding: 6px 12px; border-radius: 6px; border: 1px solid #334155; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-        .puntos-widget button { background: #38bdf8; color: #0f172a; border: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .puntos-widget button:hover { background: #7dd3fc; }
+        /* Botones generales */
+        .btn-accion { background-color: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .btn-accion:hover { background-color: #7dd3fc; }
+
+        /* Menú desplegable de 3 rayitas (Hamburguesa) */
+        .dropdown { position: relative; display: inline-block; }
+        .dropbtn { background-color: #0f172a; color: white; padding: 8px 14px; font-size: 18px; border: 1px solid #334155; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 100; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; }
+        .dropdown-content a, .dropdown-content div.dropdown-item { color: #1e293b; padding: 12px 16px; text-decoration: none; display: block; font-size: 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+        .dropdown-content a:hover, .dropdown-content div.dropdown-item:hover { background-color: #f8fafc; color: #0284c7; }
+        .dropdown.show .dropdown-content { display: block; }
 
         .main-layout { display: flex; max-width: 1200px; margin: 30px auto; padding: 0 20px; gap: 30px; flex-wrap: wrap; }
         .catalog-section { flex: 2; min-width: 300px; }
@@ -32,7 +39,7 @@
 
         /* Modales */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position: absolute; right: 15px; top: 10px; font-size: 22px; cursor: pointer; color: #64748b; }
     </style>
 </head>
@@ -44,18 +51,27 @@
             <a href="/">Tienda</a>
             <a href="/tramites-en-linea">Trámites en Línea</a>
             <a href="/rastreo">Rastreo de Trámites</a>
+            <a href="/terminos" target="_blank">Términos y Condiciones</a>
 
-            <!-- Widget Puntos Pepel & Tinta -->
-            <div class="puntos-widget">
-                {% if cliente_actual %}
-                    <span>⭐ <strong>{{ cliente_actual.nombre }}</strong> (Tarj: {{ cliente_actual.serial }})</span>
-                    <a href="/logout-puntos" style="color: #f87171; text-decoration: none; font-weight: bold; margin-left: 5px;">Salir</a>
-                {% else %}
-                    <span>🎁 Puntos Pepel & Tinta</span>
-                    <button onclick="abrirModal('modal-login')">Ingresar</button>
-                    <button onclick="abrirModal('modal-registro')" style="background: #10b981; color: white;">Registrarse</button>
-                {% endif %}
-            </div>
+            <!-- Widget de Puntos Pepel & Tinta / Menú de Usuario -->
+            {% if cliente_actual %}
+                <div class="dropdown">
+                    <button onclick="toggleMenu()" class="dropbtn">☰ <span>{{ cliente_actual.nombre }}</span></button>
+                    <div id="userDropdown" class="dropdown-content">
+                        <div class="dropdown-item" style="background: #f1f5f9; font-weight: bold; color: #0f172a;">⭐ Tarj: {{ cliente_actual.serial }}</div>
+                        <div class="dropdown-item" onclick="abrirModal('modal-cuenta')">👤 Cuenta (Editar Datos)</div>
+                        <div class="dropdown-item" onclick="abrirModal('modal-pedidos')">📦 Mis Pedidos y Puntos</div>
+                        <div class="dropdown-item" onclick="abrirModal('modal-tarjeta')">💳 Tarjeta Papel & Tinta</div>
+                        <a href="/terminos" target="_blank">📄 Términos y Condiciones</a>
+                        <a href="/logout-puntos" style="color: #ef4444; font-weight: bold;">🚪 Cerrar Sesión</a>
+                    </div>
+                </div>
+            {% else %}
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-accion" onclick="abrirModal('modal-login')">Ingresar</button>
+                    <button class="btn-accion" style="background: #10b981; color: white;" onclick="abrirModal('modal-registro')">Registrarse</button>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -76,7 +92,7 @@
 
     <!-- MODAL DE REGISTRO PUNTOS -->
     <div id="modal-registro" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal('modal-registro')">&times;</span>
             <h3 style="margin-top:0; color: #1e293b;">Crear Cuenta - Puntos Pepel & Tinta</h3>
             <form action="/registro-puntos" method="POST" onsubmit="return validarEdadRegistro()">
@@ -93,16 +109,87 @@
                 <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="client-input" onchange="verificarEdadDpi()" required>
                 <small style="color: #64748b; display: block; margin-bottom: 8px;">Debes tener al menos 15 años cumplidos.</small>
                 
-                <label>Número de DPI <span id="label-dpi-status" style="font-weight:normal; color:#e11d48;">(Obligatorio para mayores de 18)</span>:</label>
+                <label>Número de DPI <span id="label-dpi-status" style="font-weight:normal; color:#e11d48;">(Obligatorio mayores de 18)</span>:</label>
                 <input type="text" id="dpi_input" name="dpi" class="client-input" placeholder="Ingresa tu DPI si eres mayor de edad...">
                 
                 <label>Número de Teléfono:</label>
                 <input type="text" name="telefono" class="client-input" required>
+
+                <label>Localidad / Dirección:</label>
+                <input type="text" name="localidad" class="client-input" placeholder="Ciudad, Zona, Municipio...">
                 
                 <button type="submit" class="btn-comprar" style="background-color: #0d6efd; margin-top: 10px;">Registrarme y Obtener Tarjeta</button>
             </form>
         </div>
     </div>
+
+    {% if cliente_actual %}
+    <!-- MODAL 1: CUENTA (EDITAR DATOS) -->
+    <div id="modal-cuenta" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal('modal-cuenta')">&times;</span>
+            <h3 style="color: #1e293b; margin-top:0;">Mi Cuenta - Editar Datos</h3>
+            <form action="/actualizar-cuenta" method="POST">
+                <label>Nombre Completo:</label>
+                <input type="text" name="nombre_completo" class="client-input" value="{{ cliente_actual.nombre }}" required>
+                
+                <label>Correo Electrónico (No modificable):</label>
+                <input type="email" class="client-input" value="{{ cliente_actual.correo }}" disabled style="background: #e2e8f0;">
+
+                <label>Teléfono:</label>
+                <input type="text" name="telefono" class="client-input" value="{{ cliente_actual.telefono }}">
+
+                <label>Fecha de Nacimiento:</label>
+                <input type="date" name="fecha_nacimiento" class="client-input" value="{{ cliente_actual.fecha_nacimiento }}">
+
+                <label>Localidad / Dirección:</label>
+                <input type="text" name="localidad" class="client-input" value="{{ cliente_actual.localidad }}">
+
+                <label>Número de DPI:</label>
+                <input type="text" name="dpi" class="client-input" value="{{ cliente_actual.dpi }}">
+
+                <button type="submit" class="btn-comprar" style="margin-top: 10px; background: #0d6efd;">Guardar Cambios</button>
+            </form>
+            <hr style="margin: 20px 0; border:0; border-top: 1px solid #cbd5e1;">
+            <form action="/eliminar-cuenta-puntos" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar tu cuenta de Puntos Pepel & Tinta? Se borrarán todos tus datos.');">
+                <button type="submit" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: bold; width: 100%;">🗑️ Eliminar mi Cuenta por Completo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: MIS PEDIDOS Y PUNTOS -->
+    <div id="modal-pedidos" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal('modal-pedidos')">&times;</span>
+            <h3 style="color: #1e293b; margin-top:0;">Mis Pedidos & Puntos Ganados</h3>
+            <p style="font-size: 14px; color: #64748b;">Aquí puedes consultar tu historial de compras y los puntos acumulados con tu tarjeta <strong>{{ cliente_actual.serial }}</strong>.</p>
+            <div class="alert alert-info" style="background: #e0f2fe; padding: 15px; border-radius: 6px; color: #0369a1; font-size: 14px;">
+                ⭐ Tienes tu cuenta sincronizada correctamente. Cada compra realizada acumulará puntos automáticamente en el sistema central de la librería.
+            </div>
+            <button class="btn-comprar" onclick="cerrarModal('modal-pedidos')" style="margin-top: 15px;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: TARJETA PAPEL & TINTA (ENLAZAR O VER) -->
+    <div id="modal-tarjeta" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal('modal-tarjeta')">&times;</span>
+            <h3 style="color: #1e293b; margin-top:0;">Tarjeta Puntos Pepel & Tinta</h3>
+            <div style="text-align: center; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px dashed #cbd5e1; margin-bottom: 15px;">
+                <p style="margin: 0; font-size: 13px; color: #64748b;">Tu tarjeta actual asociada:</p>
+                <h2 style="color: #0284c7; margin: 10px 0;">{{ cliente_actual.serial }}</h2>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 15px;">¿Ya tienes una tarjeta física creada en nuestro local?</h4>
+            <p style="font-size: 13px; color: #64748b;">Puedes ingresarla aquí para enlazarla a tu cuenta web (recuerda que una tarjeta solo puede pertenecer a una cuenta).</p>
+            <form action="/enlazar-tarjeta" method="POST">
+                <label>Número de Tarjeta Existente (8 dígitos):</label>
+                <input type="text" name="serial_existente" class="client-input" placeholder="Ej. 10000005" required>
+                <button type="submit" class="btn-comprar" style="background: #3b82f6; margin-top: 5px;">Enlazar Tarjeta</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="main-layout">
         <div class="catalog-section">
@@ -149,21 +236,28 @@
             </div>
             <h3>Total: Q<span id="total-carrito">0.00</span></h3>
             <button id="btn-enviar-pedido" class="btn-whatsapp" onclick="enviarPedidoWhatsApp()" style="display:none;">🛒 Generar Pedido</button>
-            
-            {% if cliente_actual %}
-                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #cbd5e1;">
-                <div style="text-align: center;">
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">¿Deseas dar de baja tu cuenta de Puntos?</p>
-                    <form action="/eliminar-cuenta-puntos" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar tu cuenta de Puntos Pepel & Tinta? Se borrarán todos tus datos.');">
-                        <button type="submit" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">🗑️ Eliminar mi Cuenta</button>
-                    </form>
-                </div>
-            {% endif %}
         </div>
     </div>
 
     <script>
         let carrito = [];
+
+        // Control del menú desplegable (3 rayitas)
+        function toggleMenu() {
+            document.getElementById("userDropdown").classList.toggle("show");
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropbtn') && !event.target.matches('.dropbtn *')) {
+                let dropdowns = document.getElementsByClassName("dropdown-content");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    let openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
 
         function abrirModal(modalId) {
             document.getElementById(modalId).style.display = 'flex';
@@ -173,7 +267,6 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Validación estricta de edad y control automático de DPI
         function verificarEdadDpi() {
             let fechaNacVal = document.getElementById("fecha_nacimiento").value;
             if (!fechaNacVal) return;
@@ -273,6 +366,22 @@
             actualizarCarrito();
         }
 
+        function cambiarCantidadItem(index, delta) {
+            carrito[index].cantidad += delta;
+            if (carrito[index].cantidad <= 0) {
+                carrito.splice(index, 1);
+            } else if (carrito[index].cantidad > carrito[index].stockMax) {
+                alert("No puedes exceder el stock disponible.");
+                carrito[index].cantidad = carrito[index].stockMax;
+            }
+            actualizarCarrito();
+        }
+
+        function eliminarItemCarrito(index) {
+            carrito.splice(index, 1);
+            actualizarCarrito();
+        }
+
         function actualizarCarrito() {
             let lista = document.getElementById("lista-carrito");
             let spanTotal = document.getElementById("total-carrito");
@@ -287,11 +396,20 @@
                 return;
             }
 
-            carrito.forEach(i => {
+            carrito.forEach((i, index) => {
                 let sub = i.precio * i.cantidad;
                 total += sub;
                 let li = document.createElement("li");
-                li.innerText = `${i.nombre} (x${i.cantidad}) - Q${sub.toFixed(2)}`;
+                li.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;";
+                li.innerHTML = `
+                    <span>${i.nombre} (Q${i.precio.toFixed(2)})</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <button type="button" onclick="cambiarCantidadItem(${index}, -1)" style="padding: 2px 6px; font-size:12px;">-</button>
+                        <span>${i.cantidad}</span>
+                        <button type="button" onclick="cambiarCantidadItem(${index}, 1)" style="padding: 2px 6px; font-size:12px;">+</button>
+                        <button type="button" onclick="eliminarItemCarrito(${index})" style="background: #ef4444; color:white; border:none; padding: 2px 6px; border-radius:3px; cursor:pointer; font-size:11px;">✕</button>
+                    </div>
+                `;
                 lista.appendChild(li);
             });
 
