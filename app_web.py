@@ -233,7 +233,29 @@ def puntos_pepel_tinta():
   cliente = session.get("cliente_puntos")
   if not cliente:
     return redirect(url_for("pagina_login"))
-  return render_template("puntos.html", cliente=cliente)
+
+  puntos_actuales = 0.0
+  serial = cliente.get("serial")
+
+  # Consultar los puntos reales de la tabla tarjeta_puntos si tiene tarjeta enlazada
+  if serial:
+    try:
+      url_puntos = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(str(serial))}&select=puntos"
+      headers = {
+          "apikey": SUPABASE_KEY,
+          "Authorization": f"Bearer {SUPABASE_KEY}",
+      }
+      resp = requests.get(url_puntos, headers=headers)
+      if resp.status_code == 200:
+        data_t = resp.json()
+        if data_t:
+          puntos_actuales = float(data_t[0].get("puntos", 0.0) or 0.0)
+    except Exception as e:
+      print("Error al consultar puntos:", e)
+
+  return render_template(
+      "puntos.html", cliente=cliente, puntos_actuales=puntos_actuales
+  )
 
 
 @app.route("/generar-tarjeta-online", methods=["POST"])
@@ -251,25 +273,24 @@ def generar_tarjeta_online():
         "Prefer": "return=representation",
     }
 
-    # 1. Consultar cuenta en cuentas_usuarios para validar los datos obligatorios
     url_perfil = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     resp_perfil = requests.get(url_perfil, headers=headers)
     if resp_perfil.status_code == 200 and resp_perfil.json():
       cli_db = resp_perfil.json()[0]
+      nombre_db = str(cli_db.get("nombre_completo", "")).strip()
       dpi_db = str(cli_db.get("dpi", "")).strip()
       tel_db = str(cli_db.get("telefono", "")).strip()
       fnac_db = str(cli_db.get("fecha_nacimiento", "")).strip()
 
-      if not dpi_db or not tel_db or not fnac_db:
+      if not dpi_db or not tel_db or not fnac_db or not nombre_db:
         return """
                 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Datos Incompletos</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                 <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
                 <h3 class="text-danger">Requisito incompleto</h3>
-                <p class="mt-3">Para generar tu tarjeta digital, es obligatorio haber ingresado tu <strong>Número de Identificación (DPI)</strong>, <strong>Fecha de Nacimiento</strong> y <strong>Teléfono</strong> en los ajustes de tu cuenta.</p>
+                <p class="mt-3">Para generar tu tarjeta digital, es obligatorio haber ingresado tu <strong>Nombre Completo</strong>, <strong>Número de Identificación (DPI)</strong>, <strong>Fecha de Nacimiento</strong> y <strong>Teléfono</strong> en los ajustes de tu cuenta.</p>
                 <a href='/' class="btn btn-secondary mt-3">Ir a la Tienda y Actualizar Datos</a></div></body></html>
                 """
 
-      # 2. Verificar duplicados en la tabla 'tarjeta_puntos'
       url_dup = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?or=(dpi_propietario.eq.{requests.utils.quote(dpi_db)},telefono_propietario.eq.{requests.utils.quote(tel_db)})"
       resp_dup = requests.get(url_dup, headers=headers)
       if resp_dup.status_code == 200 and resp_dup.json():
@@ -281,7 +302,6 @@ def generar_tarjeta_online():
                 <a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                 """
 
-    # 3. Obtener el siguiente serial de 8 dígitos
     url_serial = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
     resp_serial = requests.get(url_serial, headers=headers)
 
@@ -296,10 +316,10 @@ def generar_tarjeta_online():
           except:
             pass
 
-    # 4. Crear el registro en la tabla 'tarjeta_puntos'
     payload_tarjeta = {
         "serial_tarjeta": nuevo_serial,
         "puntos": 0,
+        "nombre_propietario": nombre_db,
         "dpi_propietario": dpi_db,
         "telefono_propietario": tel_db,
         "fecha_nacimiento": fnac_db,
@@ -311,7 +331,6 @@ def generar_tarjeta_online():
         headers=headers,
     )
 
-    # 5. Enlazar el serial en la cuenta del usuario
     url_upd = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     requests.patch(
         url_upd, json={"serial_tarjeta": nuevo_serial}, headers=headers
@@ -388,7 +407,6 @@ def enlazar_tarjeta():
         "Prefer": "return=representation",
     }
 
-    # 1. Verificar si la tarjeta física existe en la tabla 'tarjeta_puntos'
     url_check = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=serial_tarjeta,estado,dpi_propietario"
     resp_check = requests.get(url_check, headers=headers)
 
@@ -397,7 +415,6 @@ def enlazar_tarjeta():
       if data_tarj:
         tarjeta_info = data_tarj[0]
         if tarjeta_info.get("estado") == "ASIGNADA":
-          # Comprobar si ya está enlazada en otra cuenta de cuentas_usuarios
           url_cli_check = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=correo"
           resp_cli = requests.get(url_cli_check, headers=headers)
           if resp_cli.status_code == 200 and resp_cli.json():
@@ -409,7 +426,6 @@ def enlazar_tarjeta():
                         <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya está enlazada a otra cuenta web.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                         """
 
-        # 2. Si la tarjeta existe pero no estaba asignada, actualizar sus datos
         url_upd_cuenta = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
         resp_u = requests.get(url_upd_cuenta, headers=headers)
         if resp_u.status_code == 200 and resp_u.json():
@@ -418,6 +434,7 @@ def enlazar_tarjeta():
               f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}",
               json={
                   "estado": "ASIGNADA",
+                  "nombre_propietario": cli_info.get("nombre_completo"),
                   "dpi_propietario": cli_info.get("dpi"),
                   "telefono_propietario": cli_info.get("telefono"),
                   "fecha_nacimiento": cli_info.get("fecha_nacimiento"),
@@ -425,7 +442,6 @@ def enlazar_tarjeta():
               headers=headers,
           )
 
-        # Vincular el serial al usuario
         requests.patch(
             url_upd_cuenta,
             json={"serial_tarjeta": serial_existente},
@@ -462,7 +478,6 @@ def desvincular_tarjeta():
         "Prefer": "return=minimal",
     }
 
-    # 1. Liberar la tarjeta en la tabla 'tarjeta_puntos'
     if serial_actual:
       try:
         requests.patch(
@@ -473,7 +488,6 @@ def desvincular_tarjeta():
       except Exception as e:
         print("Error al liberar tarjeta en tabla maestra:", e)
 
-    # 2. Borrar la tarjeta asignada en 'cuentas_usuarios'
     url_upd = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     resp = requests.patch(url_upd, json={"serial_tarjeta": None}, headers=headers)
 
@@ -501,7 +515,6 @@ def eliminar_cuenta_puntos():
         "Content-Type": "application/json",
     }
 
-    # BORRAMOS ÚNICAMENTE DE 'cuentas_usuarios'. La tarjeta y los puntos en 'tarjeta_puntos' NUNCA SE TOCAN NI SE BORRAN.
     url_delete = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     resp = requests.delete(url_delete, headers=headers)
 
