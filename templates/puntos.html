@@ -18,7 +18,11 @@
         .btn-main:hover { background-color: #059669; }
         .btn-blue { background-color: #0284c7; }
         .btn-blue:hover { background-color: #0369a1; }
+        .btn-warning { background-color: #f59e0b; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; margin-top: 15px; }
+        .btn-warning:hover { background-color: #d97706; }
         .section-form { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: left; }
+        .points-display { font-size: 28px; font-weight: bold; color: #0284c7; margin: 10px 0 5px 0; }
+        .money-equivalent { font-size: 16px; color: #047857; font-weight: 600; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -45,8 +49,19 @@
         {% if cliente.serial %}
             <div class="card-box">
                 <p style="margin: 0; font-size: 14px; color: #0369a1;">Tu tarjeta de lealtad activa:</p>
-                <h1 style="color: #0284c7; margin: 10px 0;">{{ cliente.serial }}</h1>
+                <h2 style="color: #0284c7; margin: 5px 0;">{{ cliente.serial }}</h2>
                 <p style="margin: 0; font-size: 13px; color: #64748b;">Estado: Vinculada y acumulando puntos.</p>
+                
+                <hr style="border: 0; border-top: 1px solid #bae6fd; margin: 15px 0;">
+
+                <!-- Puntos y su equivalente en Quetzales -->
+                <p style="margin: 0; font-size: 13px; color: #334155; text-transform: uppercase; font-weight: 600;">Puntos Acumulados</p>
+                <div class="points-display">⭐ {{ puntos_actuales | int }} Puntos</div>
+                <div class="money-equivalent">Equivalente a: Q{{ "%.2f" | format(puntos_actuales) }}</div>
+
+                <form action="/desvincular-tarjeta" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas desvincular tu tarjeta actual?');" style="margin-top: 20px;">
+                    <button type="submit" class="btn-warning">🔓 Desvincular o Cambiar Tarjeta</button>
+                </form>
             </div>
         {% else %}
             <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
