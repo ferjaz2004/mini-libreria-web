@@ -54,10 +54,10 @@
                 
                 <hr style="border: 0; border-top: 1px solid #bae6fd; margin: 15px 0;">
 
-                <!-- Puntos y su equivalente en Quetzales -->
+                <!-- Puntos y su equivalente correcto en Quetzales (100 puntos = Q1) -->
                 <p style="margin: 0; font-size: 13px; color: #334155; text-transform: uppercase; font-weight: 600;">Puntos Acumulados</p>
                 <div class="points-display">⭐ {{ puntos_actuales | int }} Puntos</div>
-                <div class="money-equivalent">Equivalente a: Q{{ "%.2f" | format(puntos_actuales) }}</div>
+                <div class="money-equivalent">Equivalente a: Q{{ "%.2f" | format(equivalente_quetzales) }}</div>
 
                 <form action="/desvincular-tarjeta" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas desvincular tu tarjeta actual?');" style="margin-top: 20px;">
                     <button type="submit" class="btn-warning">🔓 Desvincular o Cambiar Tarjeta</button>
