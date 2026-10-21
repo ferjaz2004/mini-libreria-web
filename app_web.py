@@ -252,7 +252,6 @@ def puntos_pepel_tinta():
     except Exception as e:
       print("Error al consultar puntos:", e)
 
-  # Cálculo: 100 puntos = Q1 (por lo tanto, puntos / 100)
   equivalente_quetzales = puntos_actuales / 100.0
 
   return render_template(
@@ -412,7 +411,7 @@ def enlazar_tarjeta():
         "Prefer": "return=representation",
     }
 
-    url_check = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=serial_tarjeta,estado,dpi_propietario"
+    url_check = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=serial_tarjeta,estado"
     resp_check = requests.get(url_check, headers=headers)
 
     if resp_check.status_code == 200:
@@ -431,27 +430,21 @@ def enlazar_tarjeta():
                         <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya está enlazada a otra cuenta web.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                         """
 
-        url_upd_cuenta = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
-        resp_u = requests.get(url_upd_cuenta, headers=headers)
-        if resp_u.status_code == 200 and resp_u.json():
-          cli_info = resp_u.json()[0]
-          requests.patch(
-              f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}",
-              json={
-                  "estado": "ASIGNADA",
-                  "nombre_propietario": cli_info.get("nombre_completo"),
-                  "dpi_propietario": cli_info.get("dpi"),
-                  "telefono_propietario": cli_info.get("telefono"),
-                  "fecha_nacimiento": cli_info.get("fecha_nacimiento"),
-              },
-              headers=headers,
-          )
+        # CORRECCIÓN CLAVE: Solo marcamos la tarjeta como ASIGNADA sin tocar ni sobrescribir el nombre_propietario, dpi_propietario, etc.
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}",
+            json={"estado": "ASIGNADA"},
+            headers=headers,
+        )
 
+        # Enlazamos únicamente el serial en la cuenta del usuario web
+        url_upd_cuenta = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
         requests.patch(
             url_upd_cuenta,
             json={"serial_tarjeta": serial_existente},
             headers=headers,
         )
+
         cliente["serial"] = serial_existente
         session["cliente_puntos"] = cliente
       else:
