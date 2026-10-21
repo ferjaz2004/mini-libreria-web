@@ -125,7 +125,7 @@ def registro_puntos():
     }
 
     resp_insert = requests.post(
-        f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion",
+        f"{SUPABASE_URL}/rest/v1/cuentas_usuarios",
         json=payload_cliente,
         headers=headers,
     )
@@ -164,8 +164,7 @@ def login_puntos():
     if not correo or not password:
       return redirect(url_for("pagina_login"))
 
-    # Consulta directa y segura a Supabase
-    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+    url = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
     resp = requests.get(url, headers=headers)
@@ -215,7 +214,7 @@ def logout_puntos():
           "Content-Type": "application/json",
           "Prefer": "return=minimal",
       }
-      url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(cliente.get('correo'))}"
+      url_upd = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(cliente.get('correo'))}"
       requests.patch(
           url_upd,
           json={"carrito_guardado": json.dumps(carrito_actual)},
@@ -252,7 +251,38 @@ def generar_tarjeta_online():
         "Prefer": "return=representation",
     }
 
-    url_serial = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
+    # 1. Consultar cuenta en cuentas_usuarios para validar los datos obligatorios
+    url_perfil = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
+    resp_perfil = requests.get(url_perfil, headers=headers)
+    if resp_perfil.status_code == 200 and resp_perfil.json():
+      cli_db = resp_perfil.json()[0]
+      dpi_db = str(cli_db.get("dpi", "")).strip()
+      tel_db = str(cli_db.get("telefono", "")).strip()
+      fnac_db = str(cli_db.get("fecha_nacimiento", "")).strip()
+
+      if not dpi_db or not tel_db or not fnac_db:
+        return """
+                <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Datos Incompletos</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+                <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
+                <h3 class="text-danger">Requisito incompleto</h3>
+                <p class="mt-3">Para generar tu tarjeta digital, es obligatorio haber ingresado tu <strong>Número de Identificación (DPI)</strong>, <strong>Fecha de Nacimiento</strong> y <strong>Teléfono</strong> en los ajustes de tu cuenta.</p>
+                <a href='/' class="btn btn-secondary mt-3">Ir a la Tienda y Actualizar Datos</a></div></body></html>
+                """
+
+      # 2. Verificar duplicados en la tabla 'tarjeta_puntos'
+      url_dup = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?or=(dpi_propietario.eq.{requests.utils.quote(dpi_db)},telefono_propietario.eq.{requests.utils.quote(tel_db)})"
+      resp_dup = requests.get(url_dup, headers=headers)
+      if resp_dup.status_code == 200 and resp_dup.json():
+        return """
+                <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Duplicado</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+                <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
+                <h3 class="text-danger">Tarjeta ya existente</h3>
+                <p class="mt-3">Ya existe una tarjeta de fidelidad vinculada a este número de Identificación (DPI) o Teléfono.</p>
+                <a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                """
+
+    # 3. Obtener el siguiente serial de 8 dígitos
+    url_serial = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?select=serial_tarjeta&order=serial_tarjeta.desc&limit=1"
     resp_serial = requests.get(url_serial, headers=headers)
 
     nuevo_serial = "10000000"
@@ -266,14 +296,29 @@ def generar_tarjeta_online():
           except:
             pass
 
-    url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
-    resp_upd = requests.patch(
+    # 4. Crear el registro en la tabla 'tarjeta_puntos'
+    payload_tarjeta = {
+        "serial_tarjeta": nuevo_serial,
+        "puntos": 0,
+        "dpi_propietario": dpi_db,
+        "telefono_propietario": tel_db,
+        "fecha_nacimiento": fnac_db,
+        "estado": "ASIGNADA",
+    }
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/tarjeta_puntos",
+        json=payload_tarjeta,
+        headers=headers,
+    )
+
+    # 5. Enlazar el serial en la cuenta del usuario
+    url_upd = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
+    requests.patch(
         url_upd, json={"serial_tarjeta": nuevo_serial}, headers=headers
     )
 
-    if resp_upd.status_code in [200, 204]:
-      cliente["serial"] = nuevo_serial
-      session["cliente_puntos"] = cliente
+    cliente["serial"] = nuevo_serial
+    session["cliente_puntos"] = cliente
 
     return redirect(url_for("puntos_pepel_tinta"))
   except Exception as e:
@@ -310,7 +355,7 @@ def actualizar_cuenta():
         "dpi": dpi,
     }
 
-    url_update = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+    url_update = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     resp = requests.patch(url_update, json=payload, headers=headers)
 
     if resp.status_code in [200, 204]:
@@ -343,34 +388,101 @@ def enlazar_tarjeta():
         "Prefer": "return=representation",
     }
 
-    url_check = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=correo"
+    # 1. Verificar si la tarjeta física existe en la tabla 'tarjeta_puntos'
+    url_check = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=serial_tarjeta,estado,dpi_propietario"
     resp_check = requests.get(url_check, headers=headers)
 
     if resp_check.status_code == 200:
       data_tarj = resp_check.json()
       if data_tarj:
-        propietario_actual = data_tarj[0].get("correo")
-        if propietario_actual and propietario_actual != correo:
-          return """
-                    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
-                    <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                    <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya se encuentra enlazada a otra cuenta.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
-                    """
-        else:
-          url_upd = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+        tarjeta_info = data_tarj[0]
+        if tarjeta_info.get("estado") == "ASIGNADA":
+          # Comprobar si ya está enlazada en otra cuenta de cuentas_usuarios
+          url_cli_check = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}&select=correo"
+          resp_cli = requests.get(url_cli_check, headers=headers)
+          if resp_cli.status_code == 200 and resp_cli.json():
+            prop = resp_cli.json()[0].get("correo")
+            if prop and prop != correo:
+              return """
+                        <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+                        <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
+                        <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya está enlazada a otra cuenta web.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                        """
+
+        # 2. Si la tarjeta existe pero no estaba asignada, actualizar sus datos
+        url_upd_cuenta = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
+        resp_u = requests.get(url_upd_cuenta, headers=headers)
+        if resp_u.status_code == 200 and resp_u.json():
+          cli_info = resp_u.json()[0]
           requests.patch(
-              url_upd, json={"serial_tarjeta": serial_existente}, headers=headers
+              f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}",
+              json={
+                  "estado": "ASIGNADA",
+                  "dpi_propietario": cli_info.get("dpi"),
+                  "telefono_propietario": cli_info.get("telefono"),
+                  "fecha_nacimiento": cli_info.get("fecha_nacimiento"),
+              },
+              headers=headers,
           )
-          cliente["serial"] = serial_existente
-          session["cliente_puntos"] = cliente
+
+        # Vincular el serial al usuario
+        requests.patch(
+            url_upd_cuenta,
+            json={"serial_tarjeta": serial_existente},
+            headers=headers,
+        )
+        cliente["serial"] = serial_existente
+        session["cliente_puntos"] = cliente
       else:
         return """
                 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
                 <body class="bg-light text-center py-5"><div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #dc3545; margin: auto;">
-                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta no existe en el sistema.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
+                <h3 class="text-danger">Tarjeta no encontrada</h3><p class="mt-3">El número de tarjeta no existe en la base de datos del negocio.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                 """
   except Exception as e:
     print("Error al enlazar tarjeta:", e)
+
+  return redirect(url_for("puntos_pepel_tinta"))
+
+
+@app.route("/desvincular-tarjeta", methods=["POST"])
+def desvincular_tarjeta():
+  try:
+    cliente = session.get("cliente_puntos")
+    if not cliente:
+      return redirect(url_for("pagina_login"))
+
+    correo = cliente.get("correo")
+    serial_actual = cliente.get("serial")
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+
+    # 1. Liberar la tarjeta en la tabla 'tarjeta_puntos'
+    if serial_actual:
+      try:
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_actual)}",
+            json={"estado": "DISPONIBLE"},
+            headers=headers,
+        )
+      except Exception as e:
+        print("Error al liberar tarjeta en tabla maestra:", e)
+
+    # 2. Borrar la tarjeta asignada en 'cuentas_usuarios'
+    url_upd = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
+    resp = requests.patch(url_upd, json={"serial_tarjeta": None}, headers=headers)
+
+    if resp.status_code in [200, 204]:
+      cliente["serial"] = None
+      session["cliente_puntos"] = cliente
+
+  except Exception as e:
+    print("Error al desvincular tarjeta:", e)
 
   return redirect(url_for("puntos_pepel_tinta"))
 
@@ -389,7 +501,8 @@ def eliminar_cuenta_puntos():
         "Content-Type": "application/json",
     }
 
-    url_delete = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
+    # BORRAMOS ÚNICAMENTE DE 'cuentas_usuarios'. La tarjeta y los puntos en 'tarjeta_puntos' NUNCA SE TOCAN NI SE BORRAN.
+    url_delete = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
     resp = requests.delete(url_delete, headers=headers)
 
     if resp.status_code in [200, 204]:
@@ -401,7 +514,7 @@ def eliminar_cuenta_puntos():
             <body class="bg-light text-center py-5">
                 <div class="container card p-5 shadow" style="max-width: 500px; border-top: 5px solid #ffc107; margin: auto;">
                     <h3 class="text-warning">Cuenta Eliminada</h3>
-                    <p class="mt-3">Tu cuenta de <strong>Puntos Pepel & Tinta</strong> ha sido eliminada correctamente.</p>
+                    <p class="mt-3">Tu cuenta web ha sido eliminada. <strong>Tu tarjeta física y tus puntos acumulados siguen seguros en el sistema del negocio.</strong></p>
                     <a href="/" class="btn btn-secondary mt-3">Regresar a la Tienda</a>
                 </div>
             </body>
