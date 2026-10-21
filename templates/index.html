@@ -34,7 +34,7 @@
         .btn-whatsapp { background-color: #25d366; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 15px; }
 
         .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position: absolute; right: 15px; top: 10px; font-size: 22px; cursor: pointer; color: #64748b; }
         
         .cart-badge { background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; margin-left: 5px; }
@@ -145,13 +145,25 @@
         <div class="modal-content" style="max-width: 600px;">
             <span class="close-btn" onclick="cerrarModal('modal-pedidos')">&times;</span>
             <h3 style="color: #1e293b; margin-top:0;">📦 Mis Pedidos & Puntos Ganados</h3>
-            <p style="font-size: 14px; color: #64748b;">Historial de compras asociadas a tu cuenta.</p>
+            <p style="font-size: 14px; color: #64748b;">Haz clic en cualquier código de pedido (ej. PED-xxxx) para ver su detalle.</p>
             
             <div id="contenedor-historial-pedidos" style="max-height: 300px; overflow-y: auto; text-align: left; margin-top: 15px;">
                 <p style="text-align: center; color: #64748b;">Cargando tus pedidos...</p>
             </div>
 
             <button class="btn-comprar" onclick="cerrarModal('modal-pedidos')" style="margin-top: 15px;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: DETALLE DE UN PEDIDO ESPECÍFICO -->
+    <div id="modal-detalle-pedido" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <span class="close-btn" onclick="cerrarModal('modal-detalle-pedido')">&times;</span>
+            <h3 id="titulo-detalle-pedido" style="color: #0284c7; margin-top:0;">Detalle del Pedido</h3>
+            <div id="contenido-detalle-pedido" style="max-height: 250px; overflow-y: auto; text-align: left; margin-top: 10px;">
+                <!-- Aquí se cargan los productos -->
+            </div>
+            <button class="btn-comprar" onclick="cerrarModal('modal-detalle-pedido')" style="margin-top: 15px; background: #64748b;">Regresar a Mis Pedidos</button>
         </div>
     </div>
     {% endif %}
@@ -244,7 +256,9 @@
                 
                 data.forEach(p => {
                     html += `<tr style='border-bottom: 1px solid #e2e8f0;'>
-                        <td style='padding: 8px; font-weight: bold; color: #0284c7;'>${p.codigo_pedido}</td>
+                        <td style='padding: 8px;'>
+                            <a href='#' onclick="verDetallePedido('${p.codigo_pedido}', ${p.total}); return false;" style='font-weight: bold; color: #0284c7; text-decoration: underline;'>${p.codigo_pedido}</a>
+                        </td>
                         <td style='padding: 8px;'>Q${parseFloat(p.total).toFixed(2)}</td>
                         <td style='padding: 8px;'><span style='padding: 3px 6px; border-radius: 4px; font-size: 11px; background: ${p.estado === 'PAGADO' ? '#d1fae5; color: #065f46;' : '#fef3c7; color: #92400e;'};'>${p.estado}</span></td>
                     </tr>`;
@@ -254,6 +268,45 @@
             })
             .catch(err => {
                 contenedor.innerHTML = "<p style='text-align: center; color: #ef4444;'>Error al cargar el historial.</p>";
+            });
+        }
+
+        function verDetallePedido(codigoPedido, totalPedido) {
+            document.getElementById("titulo-detalle-pedido").innerText = "Pedido: " + codigoPedido;
+            let contenido = document.getElementById("contenido-detalle-pedido");
+            contenido.innerHTML = "<p style='text-align: center; color: #64748b;'>Cargando detalles...</p>";
+            
+            abrirModal('modal-detalle-pedido');
+
+            fetch(`https://hvqtvrlgvbesirifaija.supabase.co/rest/v1/detalles_pedido?codigo_pedido=eq.${encodeURIComponent(codigoPedido)}&select=*`, {
+                headers: {
+                    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc",
+                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data || data.length === 0) {
+                    contenido.innerHTML = "<p style='text-align: center; color: #64748b;'>No se encontraron detalles para este pedido.</p>";
+                    return;
+                }
+
+                let html = "<ul style='list-style: none; padding: 0; font-size: 13px; margin: 0;'>";
+                data.forEach(item => {
+                    html += `<li style='display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 6px 0;'>
+                        <span><strong>${item.producto_nombre}</strong> (x${item.cantidad})</span>
+                        <span style='color: #047857; font-weight: bold;'>Q${parseFloat(item.subtotal).toFixed(2)}</span>
+                    </li>`;
+                });
+                html += `</ul>`;
+                html += `<div style='margin-top: 15px; padding-top: 10px; border-top: 2px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 15px; font-weight: bold;'>
+                    <span>Total Pagado:</span>
+                    <span style='color: #0284c7;'>Q${parseFloat(totalPedido).toFixed(2)}</span>
+                </div>`;
+                contenido.innerHTML = html;
+            })
+            .catch(err => {
+                contenido.innerHTML = "<p style='text-align: center; color: #ef4444;'>Error al obtener el detalle de los productos.</p>";
             });
         }
 
