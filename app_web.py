@@ -164,16 +164,18 @@ def login_puntos():
     if not correo or not password:
       return redirect(url_for("pagina_login"))
 
-    # Usamos 'ilike' para evitar problemas de mayúsculas/minúsculas al buscar el correo
-    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=ilike.{requests.utils.quote(correo)}&select=serial_tarjeta,nombre_completo,password,telefono,fecha_nacimiento,dpi,localidad,carrito_guardado"
+    # Consulta directa y segura a Supabase
+    url = f"{SUPABASE_URL}/rest/v1/clientes_fidelizacion?correo=eq.{requests.utils.quote(correo)}"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
     resp = requests.get(url, headers=headers)
     if resp.status_code == 200:
       data = resp.json()
-      if data:
+      if data and len(data) > 0:
         cliente = data[0]
-        if cliente.get("password") == password:
+        pass_en_db = str(cliente.get("password", "")).strip()
+
+        if pass_en_db == password:
           session.permanent = True
           session["cliente_puntos"] = {
               "nombre": cliente.get("nombre_completo"),
