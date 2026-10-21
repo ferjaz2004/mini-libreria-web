@@ -68,7 +68,7 @@
                             ⭐ Puntos Pepel & Tinta
                         </div>
                         <div class="dropdown-item" onclick="abrirModal('modal-cuenta')">👤 Cuenta (Editar Datos)</div>
-                        <div class="dropdown-item" onclick="abrirModal('modal-pedidos')">📦 Mis Pedidos y Puntos</div>
+                        <div class="dropdown-item" onclick="abrirModal('modal-pedidos'); cargarMisPedidos('{{ cliente_actual.nombre }}');">📦 Mis Pedidos y Puntos</div>
                         <a href="/terminos">📄 Términos y Condiciones</a>
                         <a href="/logout-puntos" style="color: #ef4444; font-weight: bold;">🚪 Cerrar Sesión</a>
                     {% else %}
@@ -142,13 +142,15 @@
 
     <!-- MODAL 2: MIS PEDIDOS -->
     <div id="modal-pedidos" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <span class="close-btn" onclick="cerrarModal('modal-pedidos')">&times;</span>
-            <h3 style="color: #1e293b; margin-top:0;">Mis Pedidos & Puntos Ganados</h3>
+            <h3 style="color: #1e293b; margin-top:0;">📦 Mis Pedidos & Puntos Ganados</h3>
             <p style="font-size: 14px; color: #64748b;">Historial de compras asociadas a tu cuenta.</p>
-            <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; color: #0369a1; font-size: 14px;">
-                ⭐ Cuenta sincronizada con éxito. Cada compra acumula puntos automáticamente en el sistema central de la librería.
+            
+            <div id="contenedor-historial-pedidos" style="max-height: 300px; overflow-y: auto; text-align: left; margin-top: 15px;">
+                <p style="text-align: center; color: #64748b;">Cargando tus pedidos...</p>
             </div>
+
             <button class="btn-comprar" onclick="cerrarModal('modal-pedidos')" style="margin-top: 15px;">Cerrar</button>
         </div>
     </div>
@@ -218,6 +220,41 @@
 
         function cerrarModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+        }
+
+        function cargarMisPedidos(nombreCliente) {
+            let contenedor = document.getElementById("contenedor-historial-pedidos");
+            contenedor.innerHTML = "<p style='text-align: center; color: #64748b;'>Buscando pedidos...</p>";
+
+            fetch(`https://hvqtvrlgvbesirifaija.supabase.co/rest/v1/pedidos?cliente_nombre=eq.${encodeURIComponent(nombreCliente)}&select=*&order=id.desc`, {
+                headers: {
+                    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc",
+                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data || data.length === 0) {
+                    contenedor.innerHTML = "<p style='text-align: center; color: #64748b;'>No tienes pedidos registrados todavía.</p>";
+                    return;
+                }
+
+                let html = "<table style='width: 100%; border-collapse: collapse; font-size: 13px;'>";
+                html += "<tr style='background: #f1f5f9; text-align: left;'><th style='padding: 8px;'>Código</th><th style='padding: 8px;'>Total</th><th style='padding: 8px;'>Estado</th></tr>";
+                
+                data.forEach(p => {
+                    html += `<tr style='border-bottom: 1px solid #e2e8f0;'>
+                        <td style='padding: 8px; font-weight: bold; color: #0284c7;'>${p.codigo_pedido}</td>
+                        <td style='padding: 8px;'>Q${parseFloat(p.total).toFixed(2)}</td>
+                        <td style='padding: 8px;'><span style='padding: 3px 6px; border-radius: 4px; font-size: 11px; background: ${p.estado === 'PAGADO' ? '#d1fae5; color: #065f46;' : '#fef3c7; color: #92400e;'};'>${p.estado}</span></td>
+                    </tr>`;
+                });
+                html += "</table>";
+                contenedor.innerHTML = html;
+            })
+            .catch(err => {
+                contenedor.innerHTML = "<p style='text-align: center; color: #ef4444;'>Error al cargar el historial.</p>";
+            });
         }
 
         function cambiarCantidadLocal(idIndex, delta) {
