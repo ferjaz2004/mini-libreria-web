@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 import random
@@ -430,14 +430,12 @@ def enlazar_tarjeta():
                         <h3 class="text-danger">Tarjeta no disponible</h3><p class="mt-3">Esta tarjeta ya está enlazada a otra cuenta web.</p><a href='/puntos-pepel-tinta' class="btn btn-secondary mt-3">Regresar</a></div></body></html>
                         """
 
-        # CORRECCIÓN CLAVE: Solo marcamos la tarjeta como ASIGNADA sin tocar ni sobrescribir el nombre_propietario, dpi_propietario, etc.
         requests.patch(
             f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(serial_existente)}",
             json={"estado": "ASIGNADA"},
             headers=headers,
         )
 
-        # Enlazamos únicamente el serial en la cuenta del usuario web
         url_upd_cuenta = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(correo)}"
         requests.patch(
             url_upd_cuenta,
@@ -552,6 +550,11 @@ def crear_pedido():
 
     codigo_pedido = f"PED-{random.randint(1000, 9999)}"
 
+    # CORRECCIÓN DE HORA: Ajuste exacto para hora local de Guatemala (-6 horas desde UTC)
+    fecha_reg_gt = (datetime.utcnow() - timedelta(hours=6)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -565,6 +568,7 @@ def crear_pedido():
         "cliente_telefono": telefono_cliente,
         "total": total_pedido,
         "estado": "PENDIENTE DE PAGO",
+        "fecha_registro": fecha_reg_gt,
     }
     requests.post(
         f"{SUPABASE_URL}/rest/v1/pedidos", json=payload_pedido, headers=headers
@@ -682,7 +686,9 @@ def crear_tramite_web():
         if tipo_pago == "nosotros"
         else "Boleta ya pagada por cliente"
     )
-    fecha_reg = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha_reg = (datetime.utcnow() - timedelta(hours=6)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
     estado = "Papelería recibida"
 
     archivo_cliente_url_final = ""
