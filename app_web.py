@@ -237,7 +237,6 @@ def puntos_pepel_tinta():
   puntos_actuales = 0.0
   serial = cliente.get("serial")
 
-  # Consultar los puntos reales de la tabla tarjeta_puntos si tiene tarjeta enlazada
   if serial:
     try:
       url_puntos = f"{SUPABASE_URL}/rest/v1/tarjeta_puntos?serial_tarjeta=eq.{requests.utils.quote(str(serial))}&select=puntos"
@@ -253,8 +252,14 @@ def puntos_pepel_tinta():
     except Exception as e:
       print("Error al consultar puntos:", e)
 
+  # Cálculo: 100 puntos = Q1 (por lo tanto, puntos / 100)
+  equivalente_quetzales = puntos_actuales / 100.0
+
   return render_template(
-      "puntos.html", cliente=cliente, puntos_actuales=puntos_actuales
+      "puntos.html",
+      cliente=cliente,
+      puntos_actuales=puntos_actuales,
+      equivalente_quetzales=equivalente_quetzales,
   )
 
 
