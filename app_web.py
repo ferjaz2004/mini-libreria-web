@@ -234,6 +234,25 @@ def puntos_pepel_tinta():
   if not cliente:
     return redirect(url_for("pagina_login"))
 
+  # SINCRONIZACIÓN EN TIEMPO REAL CON SUPABASE
+  # Esto garantiza que si la tarjeta fue desvinculada desde la app móvil u otro lado,
+  # la web detecte inmediatamente el cambio sin necesidad de volver a iniciar sesión.
+  try:
+    url_usuario = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(cliente.get('correo'))}&select=serial_tarjeta,nombre_completo,telefono,fecha_nacimiento,dpi,localidad"
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    resp_cli = requests.get(url_usuario, headers=headers)
+    if resp_cli.status_code == 200 and resp_cli.json():
+      cli_db = resp_cli.json()[0]
+      cliente["serial"] = cli_db.get("serial_tarjeta")
+      cliente["nombre"] = cli_db.get("nombre_completo")
+      cliente["telefono"] = cli_db.get("telefono", "")
+      cliente["fecha_nacimiento"] = cli_db.get("fecha_nacimiento", "")
+      cliente["dpi"] = cli_db.get("dpi", "")
+      cliente["localidad"] = cli_db.get("localidad", "")
+      session["cliente_puntos"] = cliente
+  except Exception as e:
+    print("Error al sincronizar datos del cliente:", e)
+
   puntos_actuales = 0.0
   serial = cliente.get("serial")
 
@@ -550,7 +569,6 @@ def crear_pedido():
 
     codigo_pedido = f"PED-{random.randint(1000, 9999)}"
 
-    # CORRECCIÓN DE HORA: Ajuste exacto para hora local de Guatemala (-6 horas desde UTC)
     fecha_reg_gt = (datetime.utcnow() - timedelta(hours=6)).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
