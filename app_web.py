@@ -16,8 +16,19 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 BUCKET_CLIENTES = "tramites-clientes"
 
 
-def obtener_productos_db():
-  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url&order=id.asc"
+# =========================================================================
+# FUNCIÓN DE PRODUCTOS (Actualizada con soporte de categoría)
+# =========================================================================
+def obtener_productos_db(categoria_filtro=None):
+  """
+  Consulta la tabla 'inventario' en Supabase. Si se le envía una categoría,
+  filtra los productos que pertenecen a ella y que están visibles en la web.
+  """
+  if categoria_filtro and categoria_filtro != "Ofertas":
+    url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&categoria=eq.{requests.utils.quote(categoria_filtro)}&order=id.asc"
+  else:
+    url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&order=id.asc"
+
   headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
   try:
     response = requests.get(url, headers=headers)
@@ -33,6 +44,7 @@ def obtener_productos_db():
               float(p.get("precio_venta", 0.0)),
               int(p.get("stock", 0)),
               str(p.get("imagen_url", "") or ""),
+              p.get("categoria", "General"),
           ))
       return productos_visibles
   except Exception as e:
@@ -40,8 +52,13 @@ def obtener_productos_db():
   return []
 
 
+# =========================================================================
+# RUTAS BÁSICAS Y VISTAS DE LA TIENDA
+# =========================================================================
+
 @app.route("/")
 def index():
+  """Carga la página principal de la tienda con el catálogo y datos de sesión."""
   try:
     productos = obtener_productos_db()
     cliente_actual = session.get("cliente_puntos")
@@ -50,6 +67,41 @@ def index():
     )
   except Exception as e:
     return f"Error al cargar la tienda: {e}"
+
+
+@app.route("/categoria/<nombre_categoria>")
+def ver_categoria(nombre_categoria):
+  """
+  Muestra la vista detallada de una categoría seleccionada,
+  su descripción informativa y los productos que pertenecen a ella.
+  """
+  try:
+    descripciones = {
+        "Papel": "Contamos con una gran variedad de papeles de alta calidad para impresiones, manualidades, arte y uso escolar o profesional.",
+        "Manualidades": "Todo lo que necesitas para dar rienda suelta a tu creatividad: accesorios, adornos, pinturas y materiales especiales.",
+        "Hilos": "Hilos resistentes y de diversos colores ideales para costura, manualidades, bordados y tejidos.",
+        "Útiles Escolares": "Cuadernos, lápices, bolígrafos, borradores y todo lo necesario para el éxito escolar de los estudiantes.",
+        "Libros": "Explora nuestra selección de libros de lectura, educativos y de interés general para todas las edades.",
+        "Ofertas": "¡Aprovecha nuestros descuentos y precios especiales por tiempo limitado en productos seleccionados!"
+    }
+
+    desc_texto = descripciones.get(
+        nombre_categoria,
+        f"Bienvenido a nuestra sección de {nombre_categoria} en Librería Jireh Alotenango. Encuentra los mejores productos."
+    )
+
+    productos = obtener_productos_db(nombre_categoria)
+    cliente_actual = session.get("cliente_puntos")
+
+    return render_template(
+        "categoria.html",
+        nombre_categoria=nombre_categoria,
+        descripcion=desc_texto,
+        productos=productos,
+        cliente_actual=cliente_actual,
+    )
+  except Exception as e:
+    return f"Error al cargar la categoría: {e}"
 
 
 @app.route("/terminos")
@@ -67,8 +119,9 @@ def pagina_login():
   return render_template("login.html")
 
 
-# --- RUTAS DE FIDELIZACIÓN: PUNTOS PEPEL & TINTA ---
-
+# =========================================================================
+# RUTAS DE FIDELIZACIÓN Y CUENTAS (Puntos Pepel & Tinta)
+# =========================================================================
 
 @app.route("/registro-puntos", methods=["POST"])
 def registro_puntos():
@@ -234,9 +287,6 @@ def puntos_pepel_tinta():
   if not cliente:
     return redirect(url_for("pagina_login"))
 
-  # SINCRONIZACIÓN EN TIEMPO REAL CON SUPABASE
-  # Esto garantiza que si la tarjeta fue desvinculada desde la app móvil u otro lado,
-  # la web detecte inmediatamente el cambio sin necesidad de volver a iniciar sesión.
   try:
     url_usuario = f"{SUPABASE_URL}/rest/v1/cuentas_usuarios?correo=eq.{requests.utils.quote(cliente.get('correo'))}&select=serial_tarjeta,nombre_completo,telefono,fecha_nacimiento,dpi,localidad"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
@@ -553,6 +603,10 @@ def eliminar_cuenta_puntos():
 
   return redirect(url_for("index"))
 
+
+# =========================================================================
+# GESTIÓN DE PEDIDOS Y TRÁMITES
+# =========================================================================
 
 @app.route("/crear-pedido", methods=["POST"])
 def crear_pedido():
