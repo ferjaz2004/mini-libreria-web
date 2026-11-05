@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ nombre_categoria }} - Librería Jireh Alotenango</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #111111;
+            --turquesa-color: #00bcd4;
+            --turquesa-hover: #00acc1;
+            --bg-light: #f9f9f9;
+            --border-color: #e5e5e5;
+            --text-main: #222222;
+            --text-muted: #717171;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); margin: 0; padding: 0; color: var(--text-main); }
+        .navbar { background-color: #ffffff; color: var(--text-main); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+        .navbar h2 { margin: 0; font-size: 22px; font-weight: 700; }
+        .navbar h2 a { color: var(--primary-color); text-decoration: none; }
+        .nav-links { display: flex; align-items: center; gap: 25px; }
+        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 14px; }
+        
+        .category-header { max-width: 1200px; margin: 30px auto 20px auto; padding: 0 20px; }
+        .category-header h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: var(--primary-color); }
+        .category-header p { font-size: 16px; color: var(--text-muted); line-height: 1.5; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+
+        .main-layout { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .products-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+        
+        .product-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: left; border: 1px solid var(--border-color); width: 100%; max-width: 240px; }
+        .product-img-container { width: 100%; height: 200px; background-color: #f3f3f3; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .product-img-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .product-card h3 { font-size: 14px; font-weight: 600; color: var(--text-main); margin: 0 0 8px 0; height: 38px; overflow: hidden; }
+        .product-price { color: var(--turquesa-color); font-size: 18px; font-weight: 700; margin: 5px 0; }
+        .product-stock { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+        
+        .qty-control { display: flex; align-items: center; gap: 5px; margin: 10px 0; }
+        .qty-control button { background: #f1f1f1; border: none; padding: 6px 12px; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 13px; }
+        .qty-control input { width: 45px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px; font-size: 13px; font-weight: 600; }
+        .btn-comprar { background-color: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 13px; }
+        .btn-comprar:hover { background-color: var(--turquesa-color); }
+        .btn-regresar { display: inline-block; margin-top: 20px; color: var(--turquesa-color); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2><a href="/">📚 Librería Jireh</a></h2>
+        <div class="nav-links">
+            <a href="/">Inicio</a>
+            <a href="/tramites-en-linea">Trámites en Línea</a>
+        </div>
+    </div>
+
+    <div class="category-header">
+        <h1>📁 Categoría: {{ nombre_categoria }}</h1>
+        <p>{{ descripcion }}</p>
+        <a href="/" class="btn-regresar">← Regresar al catálogo general</a>
+    </div>
+
+    <div class="main-layout">
+        <h2>Productos en esta categoría</h2>
+        <div class="products-grid">
+            {% if productos %}
+                {% for p in productos %}
+                    <div class="product-card">
+                        <div class="product-img-container">
+                            {% if p[4] and p[4] != "" %}
+                                <img src="{{ p[4] }}" alt="{{ p[1] }}">
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 12px;">Sin imagen</span>
+                            {% endif %}
+                        </div>
+
+                        <h3>{{ p[1] }}</h3>
+                        <div class="product-price">Q{{ "%.2f"|format(p[2]) }}</div>
+                        <div class="product-stock">Stock: {{ p[3] }} disponibles</div>
+                        
+                        <div class="qty-control">
+                            <button type="button" onclick="cambiarCantidadLocal('{{ loop.index }}', -1)">-</button>
+                            <input type="number" id="qty-{{ loop.index }}" value="1" min="1" max="{{ p[3] }}">
+                            <button type="button" onclick="cambiarCantidadLocal('{{ loop.index }}', 1)">+</button>
+                        </div>
+
+                        <button class="btn-comprar" onclick="alert('Producto seleccionado de la categoría {{ nombre_categoria }}')">🛒 Agregar al Carrito</button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: var(--text-muted); margin-top: 15px;">Próximamente agregaremos productos increíbles a la categoría de <strong>{{ nombre_categoria }}</strong>. ¡Mantente atento!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function cambiarCantidadLocal(idIndex, delta) {
+            let input = document.getElementById("qty-" + idIndex);
+            let val = parseInt(input.value) || 1;
+            let max = parseInt(input.max) || 999;
+            val += delta;
+            if (val < 1) val = 1;
+            if (val > max) val = max;
+            input.value = val;
+        }
+    </script>
+</body>
+</html>
