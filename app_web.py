@@ -38,14 +38,17 @@ def obtener_productos_db(categoria_filtro=None):
       for p in data:
         vis = p.get("visible_web")
         if vis == 1 or vis is True or vis == "1":
-          productos_visibles.append((
-              p.get("id"),
-              p.get("nombre"),
-              float(p.get("precio_venta", 0.0)),
-              int(p.get("stock", 0)),
-              str(p.get("imagen_url", "") or ""),
-              p.get("categoria", "General"),
-          ))
+          # Si se filtró por categoría de forma general o por URL, validamos también del lado de Python para mayor seguridad
+          cat_db = str(p.get("categoria", "General")).strip()
+          if not categoria_filtro or categoria_filtro == "Ofertas" or cat_db.lower() == categoria_filtro.lower():
+            productos_visibles.append((
+                p.get("id"),
+                p.get("nombre"),
+                float(p.get("precio_venta", 0.0)),
+                int(p.get("stock", 0)),
+                str(p.get("imagen_url", "") or ""),
+                cat_db,
+            ))
       return productos_visibles
   except Exception as e:
     print("Error conectando con Supabase para inventario:", e)
@@ -715,7 +718,7 @@ def crear_pedido():
                     💬 Contactar por WhatsApp para completar el pago
                 </a>
                 <br>
-                <a href="/" class="btn btn-secondary w-100">Regresar a la Tienda</a>
+                <a href="/" class="btn btn-secondary w-100">Regresar al Catálogo</a>
             </div>
         </body>
         </html>
