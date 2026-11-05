@@ -17,14 +17,15 @@ BUCKET_CLIENTES = "tramites-clientes"
 
 
 # =========================================================================
-# FUNCIÓN DE PRODUCTOS (Actualizada con soporte de categoría)
+# FUNCIÓN DE PRODUCTOS (SOLUCIÓN DEFINITIVA DE FILTRADO)
 # =========================================================================
 def obtener_productos_db(categoria_filtro=None):
   """
-  Consulta la tabla 'inventario' en Supabase. Si se le envía una categoría,
-  filtra los productos que pertenecen a ella y que están visibles en la web.
+  Consulta la tabla 'inventario' en Supabase de forma segura y estricta.
+  Filtra rigurosamente por categoría (incluyendo 'Ofertas') y verifica la visibilidad web.
   """
-  if categoria_filtro and categoria_filtro != "Ofertas":
+  # CONSULTA DEFINITIVA: Si se envía categoría, filtramos directamente desde Supabase sin excepciones
+  if categoria_filtro:
     url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&categoria=eq.{requests.utils.quote(categoria_filtro)}&order=id.asc"
   else:
     url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&order=id.asc"
@@ -37,10 +38,13 @@ def obtener_productos_db(categoria_filtro=None):
       productos_visibles = []
       for p in data:
         vis = p.get("visible_web")
+        # Validar estrictamente que el producto sea visible en la web
         if vis == 1 or vis is True or vis == "1":
-          # Si se filtró por categoría de forma general o por URL, validamos también del lado de Python para mayor seguridad
           cat_db = str(p.get("categoria", "General")).strip()
-          if not categoria_filtro or categoria_filtro == "Ofertas" or cat_db.lower() == categoria_filtro.lower():
+          
+          # Si no hay filtro, agregamos todos los visibles. 
+          # Si hay filtro, aseguramos coincidencia exacta normalizada (sin importar mayúsculas o espacios extra).
+          if not categoria_filtro or cat_db.lower() == str(categoria_filtro).strip().lower():
             productos_visibles.append((
                 p.get("id"),
                 p.get("nombre"),
@@ -75,8 +79,8 @@ def index():
 @app.route("/categoria/<nombre_categoria>")
 def ver_categoria(nombre_categoria):
   """
-  Muestra la vista detallada de una categoría seleccionada,
-  su descripción informativa y los productos que pertenecen a ella.
+  Muestra la vista detallada de una categoría seleccionada de forma definitiva,
+  su descripción informativa y los productos que pertenecen estrictamente a ella.
   """
   try:
     descripciones = {
