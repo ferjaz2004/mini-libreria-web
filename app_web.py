@@ -3,6 +3,7 @@ import json
 import os
 import random
 import re
+import unicodedata
 import requests
 from flask import Flask, redirect, render_template, request, session, url_for
 
@@ -16,42 +17,73 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 BUCKET_CLIENTES = "tramites-clientes"
 
 
+def normalizar_texto(texto):
+  """Función definitiva de normalización tolerante a tildes y espacios."""
+  if not texto:
+    return ""
+  
+  # Limpieza de espacios y minúsculas básicas
+  txt = str(texto).strip().lower()
+  
+  # Reemplazos directos infalibles para evitar problemas con acentos en URLs
+  reemplazos = {
+      "útiles escolares": "utiles escolares",
+      "utiles escolares": "utiles escolares",
+      "utiles%20escolares": "utiles escolares",
+      "papel": "papel",
+      "manualidades": "manualidades",
+      "hilos": "hilos",
+      "libros": "libros",
+      "ofertas": "ofertas"
+  }
+  
+  for k, v in reemplazos.items():
+    if k in txt:
+      return v
+      
+  # Normalización general por si viene otra categoría
+  texto_sin_acentos = "".join(
+      c for c in unicodedata.normalize("NFD", txt)
+      if unicodedata.category(c) != "Mn"
+  )
+  return re.sub(r"\s+", " ", texto_sin_acentos).strip()
+
+
 # =========================================================================
 # FUNCIÓN DE PRODUCTOS (SOLUCIÓN DEFINITIVA DE FILTRADO)
 # =========================================================================
 def obtener_productos_db(categoria_filtro=None):
   """
-  Consulta la tabla 'inventario' en Supabase de forma segura y estricta.
-  Filtra rigurosamente por categoría (incluyendo 'Ofertas') y verifica la visibilidad web.
+  Consulta la tabla 'inventario' en Supabase y aplica un filtrado robusto
+  totalmente inmune a tildes, mayúsculas, espacios y caracteres especiales de URL.
   """
-  # CONSULTA DEFINITIVA: Si se envía categoría, filtramos directamente desde Supabase sin excepciones
-  if categoria_filtro:
-    url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&categoria=eq.{requests.utils.quote(categoria_filtro)}&order=id.asc"
-  else:
-    url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&order=id.asc"
-
+  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&order=id.asc"
   headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+  
   try:
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
       data = response.json()
       productos_visibles = []
+      
+      filtro_normalizado = normalizar_texto(categoria_filtro) if categoria_filtro else None
+
       for p in data:
         vis = p.get("visible_web")
         # Validar estrictamente que el producto sea visible en la web
         if vis == 1 or vis is True or vis == "1":
-          cat_db = str(p.get("categoria", "General")).strip()
-          
-          # Si no hay filtro, agregamos todos los visibles. 
-          # Si hay filtro, aseguramos coincidencia exacta normalizada (sin importar mayúsculas o espacios extra).
-          if not categoria_filtro or cat_db.lower() == str(categoria_filtro).strip().lower():
+          cat_db_original = str(p.get("categoria", "General")).strip()
+          cat_db_normalizada = normalizar_texto(cat_db_original)
+
+          # Si no hay filtro, agregamos todos. Si hay filtro, comparamos de forma normalizada.
+          if not filtro_normalizado or cat_db_normalizada == filtro_normalizado:
             productos_visibles.append((
                 p.get("id"),
                 p.get("nombre"),
                 float(p.get("precio_venta", 0.0)),
                 int(p.get("stock", 0)),
                 str(p.get("imagen_url", "") or ""),
-                cat_db,
+                cat_db_original,
             ))
       return productos_visibles
   except Exception as e:
@@ -79,8 +111,7 @@ def index():
 @app.route("/categoria/<nombre_categoria>")
 def ver_categoria(nombre_categoria):
   """
-  Muestra la vista detallada de una categoría seleccionada de forma definitiva,
-  su descripción informativa y los productos que pertenecen estrictamente a ella.
+  Muestra la vista detallada de una categoría seleccionada de forma definitiva.
   """
   try:
     descripciones = {
@@ -92,10 +123,12 @@ def ver_categoria(nombre_categoria):
         "Ofertas": "¡Aprovecha nuestros descuentos y precios especiales por tiempo limitado en productos seleccionados!"
     }
 
-    desc_texto = descripciones.get(
-        nombre_categoria,
-        f"Bienvenido a nuestra sección de {nombre_categoria} en Librería Jireh Alotenango. Encuentra los mejores productos."
-    )
+    # Búsqueda tolerante a tildes para las descripciones
+    desc_texto = "Bienvenido a nuestra sección en Librería Jireh Alotenango."
+    for k, v in descripciones.items():
+      if normalizar_texto(k) == normalizar_texto(nombre_categoria):
+        desc_texto = v
+        break
 
     productos = obtener_productos_db(nombre_categoria)
     cliente_actual = session.get("cliente_puntos")
