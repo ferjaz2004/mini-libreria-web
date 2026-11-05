@@ -9,7 +9,8 @@
     <style>
         :root {
             --primary-color: #111111;
-            --accent-color: #ff3b30;
+            --turquesa-color: #00bcd4; /* Color turquesa institucional */
+            --turquesa-hover: #00acc1;
             --bg-light: #f9f9f9;
             --border-color: #e5e5e5;
             --text-main: #222222;
@@ -24,7 +25,7 @@
             color: var(--text-main); 
         }
 
-        /* --- BARRA SUPERIOR / HEADER ESTILO SHEIN --- */
+        /* --- BARRA SUPERIOR / HEADER --- */
         .top-bar {
             background-color: #000;
             color: #fff;
@@ -51,7 +52,7 @@
         
         .nav-links { display: flex; align-items: center; gap: 25px; flex-wrap: wrap; }
         .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 14px; transition: color 0.2s; }
-        .nav-links a:hover { color: var(--accent-color); }
+        .nav-links a:hover { color: var(--turquesa-color); }
         
         /* Menú desplegable moderno */
         .dropdown { position: relative; display: inline-block; }
@@ -94,58 +95,107 @@
             border-bottom: 1px solid #f5f5f5; 
             cursor: pointer; 
         }
-        .dropdown-content a:hover, .dropdown-content div.dropdown-item:hover { background-color: #f8f8f8; color: #000; }
+        .dropdown-content a:hover, .dropdown-content div.dropdown-item:hover { background-color: #f8f8f8; color: var(--turquesa-color); }
 
-        /* --- BANNER PRINCIPAL LLAMATIVO (TIPO SHEIN) --- */
+        /* --- BANNER PRINCIPAL --- */
         .hero-banner {
             max-width: 1200px;
             margin: 25px auto;
             padding: 0 20px;
         }
         .hero-banner-inner {
-            background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+            background: linear-gradient(135deg, #111111 0%, #333333 100%);
             border-radius: 16px;
             color: white;
             padding: 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 10px 25px rgba(255, 77, 79, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             flex-wrap: wrap;
             gap: 20px;
         }
         .hero-text h1 { font-size: 32px; margin: 0 0 10px 0; font-weight: 800; }
         .hero-text p { font-size: 16px; margin: 0 0 20px 0; opacity: 0.9; }
         .hero-btn {
-            background: #ffffff;
-            color: #ff4d4f;
+            background: var(--turquesa-color);
+            color: #ffffff;
             padding: 10px 25px;
             border-radius: 25px;
             font-weight: 700;
             text-decoration: none;
             display: inline-block;
-            transition: transform 0.2s;
+            transition: background 0.2s, transform 0.2s;
         }
-        .hero-btn:hover { transform: scale(1.05); }
+        .hero-btn:hover { background: var(--turquesa-hover); transform: scale(1.05); }
+
+        /* --- SECCIÓN DE CATEGORÍAS (CÍRCULOS NEGROS -> TURQUESA) --- */
+        .categories-section {
+            max-width: 1200px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+        .categories-section h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+        .categories-grid {
+            display: flex;
+            gap: 25px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            justify-content: flex-start;
+        }
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-main);
+            gap: 8px;
+            min-width: 85px;
+        }
+        .category-circle {
+            width: 75px;
+            height: 75px;
+            background-color: #111111; /* Círculo negro */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: white;
+            transition: background-color 0.3s ease, transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        /* Cambio a Turquesa al pasar el mouse */
+        .category-item:hover .category-circle {
+            background-color: var(--turquesa-color);
+            transform: translateY(-3px);
+        }
+        .category-item span {
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
 
         /* --- LAYOUT DEL CATALOGO --- */
         .main-layout { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
         .catalog-section h2 { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
         
         .products-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); 
+            display: flex; 
+            flex-wrap: wrap;
             gap: 20px; 
         }
         
-        /* TARJETA DE PRODUCTO MINIMALISTA Y ELEGANTE */
+        /* TARJETA DE PRODUCTO COMPACTA (Evita que se estire en barra completa) */
         .product-card { 
             background: white; 
             border-radius: 12px; 
-            padding: 12px; 
+            padding: 15px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
             text-align: left; 
             border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 240px; /* Tamaño de cuadro pequeño y fijo */
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .product-card:hover {
@@ -155,7 +205,7 @@
 
         .product-img-container {
             width: 100%; 
-            height: 220px; 
+            height: 200px; 
             background-color: #f3f3f3; 
             border-radius: 8px; 
             margin-bottom: 12px; 
@@ -165,11 +215,11 @@
             overflow: hidden;
             position: relative;
         }
-        .product-img-container img { max-width: 100%; max-height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .product-img-container img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s; }
         .product-card:hover .product-img-container img { transform: scale(1.05); }
 
-        .product-card h3 { font-size: 14px; font-weight: 500; color: var(--text-main); margin: 0 0 8px 0; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .product-price { color: var(--accent-color); font-size: 18px; font-weight: 700; margin: 5px 0; }
+        .product-card h3 { font-size: 14px; font-weight: 600; color: var(--text-main); margin: 0 0 8px 0; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .product-price { color: var(--turquesa-color); font-size: 18px; font-weight: 700; margin: 5px 0; }
         .product-stock { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
 
         .qty-control { display: flex; align-items: center; gap: 5px; margin: 10px 0; }
@@ -188,17 +238,17 @@
             font-size: 13px; 
             transition: background 0.2s;
         }
-        .btn-comprar:hover { background-color: #333; }
+        .btn-comprar:hover { background-color: var(--turquesa-color); }
 
         .client-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 14px; }
         .btn-whatsapp { background-color: #25d366; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 15px; }
 
-        /* MODALES MODERNOS */
+        /* MODALES */
         .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); position: relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
         
-        .cart-badge { background: var(--accent-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; font-weight: bold; margin-left: 5px; }
+        .cart-badge { background: var(--turquesa-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; font-weight: bold; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -214,7 +264,7 @@
             <a href="/tramites-en-linea">Trámites en Línea</a>
             <a href="/rastreo">Rastreo</a>
 
-            <!-- MENÚ DESPLEGABLE MODERNO -->
+            <!-- MENÚ DESPLEGABLE -->
             <div class="dropdown">
                 <button type="button" onclick="toggleMenu(event)" class="dropbtn">☰ 
                     <span>
@@ -226,7 +276,7 @@
                     </span>
                 </button>
                 <div id="userDropdown" class="dropdown-content">
-                    <div class="dropdown-item" onclick="abrirModal('modal-carrito')" style="font-weight: 600; color: var(--accent-color); background: #fff5f5;">
+                    <div class="dropdown-item" onclick="abrirModal('modal-carrito')" style="font-weight: 600; color: var(--turquesa-color); background: #e0f7fa;">
                         🛒 Ver Carrito <span id="cart-counter" class="cart-badge">0</span>
                     </div>
                     {% if cliente_actual %}
@@ -236,7 +286,7 @@
                         <div class="dropdown-item" onclick="abrirModal('modal-cuenta')">👤 Editar Datos de Cuenta</div>
                         <div class="dropdown-item" onclick="abrirModal('modal-pedidos'); cargarMisPedidos('{{ cliente_actual.nombre }}');">📦 Mis Pedidos</div>
                         <a href="/terminos">📄 Términos y Condiciones</a>
-                        <a href="/logout-puntos" style="color: var(--accent-color); font-weight: 600;">🚪 Cerrar Sesión</a>
+                        <a href="/logout-puntos" style="color: #ef4444; font-weight: 600;">🚪 Cerrar Sesión</a>
                     {% else %}
                         <a href="/puntos-pepel-tinta" style="font-weight: 600; color: #0284c7;">⭐ Puntos Pepel & Tinta</a>
                         <a href="/login" style="font-weight: 600;">🔑 Iniciar Sesión</a>
@@ -248,7 +298,7 @@
         </div>
     </div>
 
-    <!-- BANNER PROMOCIONAL TIPO SHEIN -->
+    <!-- BANNER PRINCIPAL -->
     <div class="hero-banner">
         <div class="hero-banner-inner">
             <div class="hero-text">
@@ -256,6 +306,41 @@
                 <p>Encuentra libros, útiles y papelería con la mejor calidad y precios increíbles.</p>
                 <a href="#catalogo" class="hero-btn">Explorar Productos</a>
             </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE CATEGORÍAS CON ICONOS (Círculos Negros -> Turquesa en Hover) -->
+    <div class="categories-section">
+        <h3>✨ Explora por Categorías</h3>
+        <div class="categories-grid">
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">📄</div>
+                <span>Papel</span>
+            </a>
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">🎨</div>
+                <span>Manualidades</span>
+            </a>
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">🧵</div>
+                <span>Hilos</span>
+            </a>
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">✏️</div>
+                <span>Útiles Escolares</span>
+            </a>
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">📖</div>
+                <span>Libros</span>
+            </a>
+            <a href="/tramites-en-linea" class="category-item">
+                <div class="category-circle">📋</div>
+                <span>Trámites en Línea</span>
+            </a>
+            <a href="#catalogo" class="category-item">
+                <div class="category-circle">🔥</div>
+                <span>Ofertas</span>
+            </a>
         </div>
     </div>
 
@@ -271,7 +356,7 @@
                 <label style="font-size: 13px; font-weight: 600;">Tu Nombre:</label>
                 <input type="text" id="input-nombre" class="client-input" placeholder="Nombre completo..." value="{% if cliente_actual %}{{ cliente_actual.nombre }}{% endif %}">
             </div>
-            <h3 style="display: flex; justify-content: space-between;"><span>Total:</span> <span style="color: var(--accent-color);">Q<span id="total-carrito">0.00</span></span></h3>
+            <h3 style="display: flex; justify-content: space-between;"><span>Total:</span> <span style="color: var(--turquesa-color);">Q<span id="total-carrito">0.00</span></span></h3>
             <button id="btn-enviar-pedido" class="btn-whatsapp" onclick="enviarPedidoWhatsApp()" style="display:none; margin-top: 10px;">🛒 Generar Pedido y Pagar</button>
         </div>
     </div>
@@ -308,10 +393,10 @@
                 <label style="font-size: 13px; font-weight: 600;">Número de DPI:</label>
                 <input type="text" name="dpi" class="client-input" value="{{ cliente_actual.dpi }}">
 
-                <button type="submit" class="btn-comprar" style="margin-top: 10px; background: #0284c7;">Guardar Cambios</button>
+                <button type="submit" class="btn-comprar" style="margin-top: 10px; background: var(--turquesa-color);">Guardar Cambios</button>
             </form>
             <hr style="margin: 20px 0; border:0; border-top: 1px solid var(--border-color);">
-            <form action="/eliminar-cuenta-puntos" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar tu cuenta de Puntos Pepel & Tinta?');">
+            <form action="/eliminar-cuenta-puntos" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar tu cuenta?');">
                 <button type="submit" style="background: #ef4444; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; width: 100%;">🗑️ Eliminar mi Cuenta por Completo</button>
             </form>
         </div>
@@ -333,7 +418,7 @@
     <div id="modal-detalle-pedido" class="modal">
         <div class="modal-content" style="max-width: 450px;">
             <span class="close-btn" onclick="cerrarModal('modal-detalle-pedido')">&times;</span>
-            <h3 id="titulo-detalle-pedido" style="color: #0284c7; margin-top:0;">Detalle del Pedido</h3>
+            <h3 id="titulo-detalle-pedido" style="color: var(--turquesa-color); margin-top:0;">Detalle del Pedido</h3>
             <div id="contenido-detalle-pedido" style="max-height: 250px; overflow-y: auto; text-align: left; margin-top: 10px;"></div>
             <button class="btn-comprar" onclick="cerrarModal('modal-detalle-pedido')" style="margin-top: 15px; background: #717171;">Regresar</button>
         </div>
@@ -343,7 +428,7 @@
     <!-- SECCIÓN DE PRODUCTOS -->
     <div class="main-layout" id="catalogo">
         <div class="catalog-section">
-            <h2>🔥 Productos Destacados</h2>
+            <h2>📦 Productos Destacados</h2>
             <div class="products-grid">
                 {% if productos %}
                     {% for p in productos %}
@@ -431,7 +516,7 @@
                 data.forEach(p => {
                     html += `<tr style='border-bottom: 1px solid #eee;'>
                         <td style='padding: 8px;'>
-                            <a href='#' onclick="verDetallePedido('${p.codigo_pedido}', ${p.total}); return false;" style='font-weight: 600; color: #0284c7; text-decoration: underline;'>${p.codigo_pedido}</a>
+                            <a href='#' onclick="verDetallePedido('${p.codigo_pedido}', ${p.total}); return false;" style='font-weight: 600; color: var(--turquesa-color); text-decoration: underline;'>${p.codigo_pedido}</a>
                         </td>
                         <td style='padding: 8px;'>Q${parseFloat(p.total).toFixed(2)}</td>
                         <td style='padding: 8px;'><span style='padding: 3px 6px; border-radius: 4px; font-size: 11px; background: ${p.estado === 'PAGADO' ? '#d1fae5; color: #065f46;' : '#fef3c7; color: #92400e;'};'>${p.estado}</span></td>
@@ -467,7 +552,7 @@
                 data.forEach(item => {
                     html += `<li style='display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 8px 0;'>
                         <span><strong>${item.producto_nombre}</strong> (x${item.cantidad})</span>
-                        <span style='color: #047857; font-weight: 600;'>Q${parseFloat(item.subtotal).toFixed(2)}</span>
+                        <span style='color: var(--turquesa-color); font-weight: 600;'>Q${parseFloat(item.subtotal).toFixed(2)}</span>
                     </li>`;
                 });
                 html += `</ul>`;
