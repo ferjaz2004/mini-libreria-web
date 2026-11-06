@@ -50,9 +50,34 @@
         .navbar h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
         .navbar h2 a { color: var(--primary-color); text-decoration: none; }
         
-        .nav-links { display: flex; align-items: center; gap: 25px; flex-wrap: wrap; }
+        .nav-links { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 14px; transition: color 0.2s; }
         .nav-links a:hover { color: var(--turquesa-color); }
+
+        /* Botón de Carrito Directo en la Barra */
+        .cart-nav-btn {
+            background-color: #f1f1f1;
+            color: var(--text-main);
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, color 0.2s;
+            text-decoration: none;
+        }
+        .cart-nav-btn:hover {
+            background-color: var(--turquesa-color);
+            color: white;
+        }
+        .cart-nav-btn:hover .cart-badge {
+            background-color: white;
+            color: var(--turquesa-color);
+        }
         
         /* Menú desplegable moderno */
         .dropdown { position: relative; display: inline-block; }
@@ -129,7 +154,7 @@
         }
         .hero-btn:hover { background: var(--turquesa-hover); transform: scale(1.05); }
 
-        /* --- SECCIÓN DE CATEGORÍAS (Círculos Negros -> Turquesa) --- */
+        /* --- SECCIÓN DE CATEGORÍAS --- */
         .categories-section {
             max-width: 1200px;
             margin: 35px auto;
@@ -155,7 +180,7 @@
         .category-circle {
             width: 75px;
             height: 75px;
-            background-color: #111111; /* Círculo negro */
+            background-color: #111111;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -165,7 +190,6 @@
             transition: background-color 0.3s ease, transform 0.2s;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        /* Cambio a Turquesa al pasar el mouse */
         .category-item:hover .category-circle {
             background-color: var(--turquesa-color);
             transform: translateY(-3px);
@@ -186,7 +210,6 @@
             gap: 20px; 
         }
         
-        /* TARJETA DE PRODUCTO COMPACTA (Evita que se estire en barra completa) */
         .product-card { 
             background: white; 
             border-radius: 12px; 
@@ -195,7 +218,7 @@
             text-align: left; 
             border: 1px solid var(--border-color);
             width: 100%;
-            max-width: 240px; /* Cuadro pequeño y fijo */
+            max-width: 240px;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .product-card:hover {
@@ -253,7 +276,7 @@
 </head>
 <body>
 
-    <!-- BARRA SUPERIOR PRO -->
+    <!-- BARRA SUPERIOR -->
     <div class="top-bar">
         🚚 ¡Envíos disponibles y acumula puntos con cada compra en Librería Jireh Alotenango! ✨
     </div>
@@ -264,7 +287,12 @@
             <a href="/tramites-en-linea">Trámites en Línea</a>
             <a href="/rastreo">Rastreo</a>
 
-            <!-- MENÚ DESPLEGABLE -->
+            <!-- BOTÓN DIRECTO DE CARRITO EN LA BARRA -->
+            <button type="button" class="cart-nav-btn" onclick="abrirModal('modal-carrito')">
+                🛒 Carrito <span id="cart-counter" class="cart-badge">0</span>
+            </button>
+
+            <!-- MENÚ DESPLEGABLE MI CUENTA -->
             <div class="dropdown">
                 <button type="button" onclick="toggleMenu(event)" class="dropbtn">☰ 
                     <span>
@@ -276,9 +304,6 @@
                     </span>
                 </button>
                 <div id="userDropdown" class="dropdown-content">
-                    <div class="dropdown-item" onclick="abrirModal('modal-carrito')" style="font-weight: 600; color: var(--turquesa-color); background: #e0f7fa;">
-                        🛒 Ver Carrito <span id="cart-counter" class="cart-badge">0</span>
-                    </div>
                     {% if cliente_actual %}
                         <div class="dropdown-item" onclick="window.location.href='/puntos-pepel-tinta'" style="font-weight: 600; color: #0284c7; background: #f0f9ff;">
                             ⭐ Puntos Pepel & Tinta
@@ -309,7 +334,7 @@
         </div>
     </div>
 
-    <!-- SECCIÓN DE CATEGORÍAS CON ICONOS (Círculos Negros -> Turquesa en Hover) -->
+    <!-- SECCIÓN DE CATEGORÍAS -->
     <div class="categories-section">
         <h3>✨ Explora por Categorías</h3>
         <div class="categories-grid">
@@ -362,7 +387,7 @@
     </div>
 
     {% if cliente_actual %}
-    <!-- MODAL 1: CUENTA -->
+    <!-- MODALES DE CUENTA Y PEDIDOS -->
     <div id="modal-cuenta" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal('modal-cuenta')">&times;</span>
@@ -402,7 +427,6 @@
         </div>
     </div>
 
-    <!-- MODAL 2: MIS PEDIDOS -->
     <div id="modal-pedidos" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <span class="close-btn" onclick="cerrarModal('modal-pedidos')">&times;</span>
@@ -414,7 +438,6 @@
         </div>
     </div>
 
-    <!-- MODAL 3: DETALLE DE UN PEDIDO -->
     <div id="modal-detalle-pedido" class="modal">
         <div class="modal-content" style="max-width: 450px;">
             <span class="close-btn" onclick="cerrarModal('modal-detalle-pedido')">&times;</span>
@@ -433,7 +456,6 @@
                 {% if productos %}
                     {% for p in productos %}
                         <div class="product-card">
-                            <!-- Enlace en la imagen para abrir la descripción -->
                             <a href="/producto/{{ p[0] }}" style="text-decoration: none;">
                                 <div class="product-img-container">
                                     {% if p[4] and p[4] != "" %}
@@ -444,7 +466,6 @@
                                 </div>
                             </a>
 
-                            <!-- Enlace en el título para abrir la descripción -->
                             <h3>
                                 <a href="/producto/{{ p[0] }}" style="text-decoration: none; color: var(--text-main);">
                                     {{ p[1] }}
@@ -470,9 +491,10 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE INTERACCIÓN -->
+    <!-- SCRIPT DE CARRITO Y MODALES -->
     <script>
-        let carrito = [];
+        let carrito = JSON.parse(localStorage.getItem("carrito_libreria")) || [];
+        actualizarCarrito();
 
         function toggleMenu(event) {
             event.stopPropagation();
@@ -502,75 +524,9 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        function cargarMisPedidos(nombreCliente) {
-            let contenedor = document.getElementById("contenedor-historial-pedidos");
-            contenedor.innerHTML = "<p style='text-align: center; color: #717171;'>Buscando pedidos...</p>";
-
-            fetch(`https://hvqtvrlgvbesirifaija.supabase.co/rest/v1/pedidos?cliente_nombre=eq.${encodeURIComponent(nombreCliente)}&select=*&order=id.desc`, {
-                headers: {
-                    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc",
-                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc"
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data || data.length === 0) {
-                    contenedor.innerHTML = "<p style='text-align: center; color: #717171;'>No tienes pedidos registrados todavía.</p>";
-                    return;
-                }
-
-                let html = "<table style='width: 100%; border-collapse: collapse; font-size: 13px;'>";
-                html += "<tr style='background: #f9f9f9; text-align: left;'><th style='padding: 8px;'>Código</th><th style='padding: 8px;'>Total</th><th style='padding: 8px;'>Estado</th></tr>";
-                
-                data.forEach(p => {
-                    html += `<tr style='border-bottom: 1px solid #eee;'>
-                        <td style='padding: 8px;'>
-                            <a href='#' onclick="verDetallePedido('${p.codigo_pedido}', ${p.total}); return false;" style='font-weight: 600; color: var(--turquesa-color); text-decoration: underline;'>${p.codigo_pedido}</a>
-                        </td>
-                        <td style='padding: 8px;'>Q${parseFloat(p.total).toFixed(2)}</td>
-                        <td style='padding: 8px;'><span style='padding: 3px 6px; border-radius: 4px; font-size: 11px; background: ${p.estado === 'PAGADO' ? '#d1fae5; color: #065f46;' : '#fef3c7; color: #92400e;'};'>${p.estado}</span></td>
-                    </tr>`;
-                });
-                html += "</table>";
-                contenedor.innerHTML = html;
-            })
-            .catch(err => {
-                contenedor.innerHTML = "<p style='text-align: center; color: #ef4444;'>Error al cargar el historial.</p>";
-            });
-        }
-
-        function verDetallePedido(codigoPedido, totalPedido) {
-            document.getElementById("titulo-detalle-pedido").innerText = "Pedido: " + codigoPedido;
-            let contenido = document.getElementById("contenido-detalle-pedido");
-            contenido.innerHTML = "<p style='text-align: center; color: #717171;'>Cargando detalles...</p>";
-            abrirModal('modal-detalle-pedido');
-
-            fetch(`https://hvqtvrlgvbesirifaija.supabase.co/rest/v1/detalles_pedido?codigo_pedido=eq.${encodeURIComponent(codigoPedido)}&select=*`, {
-                headers: {
-                    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc",
-                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cXR2cmxndmJlc2lyaWZhaWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjA4MjY3MiwiZXhwIjoyMTA3NjU4NjcyfQ.L-l2ZegBZ84yV_FRkl4RsNSGTMG0QBL7VjpUn0ONwJc"
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data || data.length === 0) {
-                    contenido.innerHTML = "<p style='text-align: center; color: #717171;'>No se encontraron detalles.</p>";
-                    return;
-                }
-                let html = "<ul style='list-style: none; padding: 0; font-size: 13px; margin: 0;'>";
-                data.forEach(item => {
-                    html += `<li style='display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 8px 0;'>
-                        <span><strong>${item.producto_nombre}</strong> (x${item.cantidad})</span>
-                        <span style='color: var(--turquesa-color); font-weight: 600;'>Q${parseFloat(item.subtotal).toFixed(2)}</span>
-                    </li>`;
-                });
-                html += `</ul>`;
-                contenido.innerHTML = html;
-            });
-        }
-
         function cambiarCantidadLocal(idIndex, delta) {
             let input = document.getElementById("qty-" + idIndex);
+            if (!input) return;
             let val = parseInt(input.value) || 1;
             let max = parseInt(input.max) || 999;
             val += delta;
@@ -586,7 +542,9 @@
         }
 
         function agregarAlCarrito(nombre, precio, stockMax, inputId) {
-            let cantidadPedida = parseInt(document.getElementById(inputId).value) || 1;
+            let inputElem = document.getElementById(inputId);
+            let cantidadPedida = inputElem ? (parseInt(inputElem.value) || 1) : 1;
+            
             let item = carrito.find(i => i.nombre === nombre);
             if (item) {
                 let nuevaCantidad = item.cantidad + cantidadPedida;
@@ -595,7 +553,7 @@
             } else {
                 carrito.push({ nombre: nombre, precio: precio, cantidad: cantidadPedida, stockMax: stockMax });
             }
-            actualizarCarrito();
+            guardarYActualizarCarrito();
             alert("¡Producto agregado al carrito!");
         }
 
@@ -606,11 +564,16 @@
             } else if (carrito[index].cantidad > carrito[index].stockMax) {
                 carrito[index].cantidad = carrito[index].stockMax;
             }
-            actualizarCarrito();
+            guardarYActualizarCarrito();
         }
 
         function eliminarItemCarrito(index) {
             carrito.splice(index, 1);
+            guardarYActualizarCarrito();
+        }
+
+        function guardarYActualizarCarrito() {
+            localStorage.setItem("carrito_libreria", JSON.stringify(carrito));
             actualizarCarrito();
         }
 
@@ -619,15 +582,17 @@
             let spanTotal = document.getElementById("total-carrito");
             let btn = document.getElementById("btn-enviar-pedido");
             let badge = document.getElementById("cart-counter");
+            if (!lista) return;
+
             lista.innerHTML = "";
             let total = 0;
             let totalItems = 0;
 
             if (carrito.length === 0) {
                 lista.innerHTML = "<li>El carrito está vacío.</li>";
-                spanTotal.innerText = "0.00";
-                btn.style.display = "none";
-                badge.innerText = "0";
+                if(spanTotal) spanTotal.innerText = "0.00";
+                if(btn) btn.style.display = "none";
+                if(badge) badge.innerText = "0";
                 return;
             }
 
@@ -649,9 +614,9 @@
                 lista.appendChild(li);
             });
 
-            spanTotal.innerText = total.toFixed(2);
-            btn.style.display = "block";
-            badge.innerText = totalItems;
+            if(spanTotal) spanTotal.innerText = total.toFixed(2);
+            if(btn) btn.style.display = "block";
+            if(badge) badge.innerText = totalItems;
         }
 
         function enviarPedidoWhatsApp() {
