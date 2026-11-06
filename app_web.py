@@ -148,12 +148,14 @@ def ver_categoria(nombre_categoria):
 @app.route("/producto/<int:producto_id>")
 def detalle_producto(producto_id):
   """
-  Muestra la vista detallada e individual de un producto seleccionado.
+  Muestra la vista detallada e individual de un producto seleccionado y productos sugeridos.
   """
   try:
-    url = f"{SUPABASE_URL}/rest/v1/inventario?id=eq.{producto_id}&select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria,descripcion"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-    resp = requests.get(url, headers=headers)
+    
+    # 1. Obtener el producto actual
+    url_prod = f"{SUPABASE_URL}/rest/v1/inventario?id=eq.{producto_id}&select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria,descripcion"
+    resp = requests.get(url_prod, headers=headers)
 
     if resp.status_code == 200:
       data = resp.json()
@@ -168,10 +170,28 @@ def detalle_producto(producto_id):
             str(p.get("categoria", "General")),
             str(p.get("descripcion", "") or "Este producto aún no cuenta con una descripción detallada."),
         )
+
+        # 2. Obtener otros productos visibles para la sección de recomendados (máximo 6)
+        url_sugeridos = f"{SUPABASE_URL}/rest/v1/inventario?visible_web=eq.1&id=neq.{producto_id}&select=id,nombre,precio_venta,imagen_url&limit=6"
+        resp_sug = requests.get(url_sugeridos, headers=headers)
+        productos_sugeridos = []
+        if resp_sug.status_code == 200:
+          for s in resp_sug.json():
+            productos_sugeridos.append((
+                s.get("id"),
+                s.get("nombre"),
+                float(s.get("precio_venta", 0.0)),
+                str(s.get("imagen_url", "") or "")
+            ))
+        
+        # Mezclar de forma aleatoria para la sección dinámica estilo Shein
+        random.shuffle(productos_sugeridos)
+
         cliente_actual = session.get("cliente_puntos")
         return render_template(
             "producto.html",
             producto=producto,
+            productos_sugeridos=productos_sugeridos,
             cliente_actual=cliente_actual,
         )
     return "<h3>Producto no encontrado</h3><p>El producto que buscas no existe o ya no está disponible.</p><a href='/'>Regresar a la tienda</a>", 404
