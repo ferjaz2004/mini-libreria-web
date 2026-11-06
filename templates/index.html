@@ -433,15 +433,24 @@
                 {% if productos %}
                     {% for p in productos %}
                         <div class="product-card">
-                            <div class="product-img-container">
-                                {% if p[4] and p[4] != "" %}
-                                    <img src="{{ p[4] }}" alt="{{ p[1] }}">
-                                {% else %}
-                                    <span style="color: var(--text-muted); font-size: 12px;">Sin imagen</span>
-                                {% endif %}
-                            </div>
+                            <!-- Enlace en la imagen para abrir la descripción -->
+                            <a href="/producto/{{ p[0] }}" style="text-decoration: none;">
+                                <div class="product-img-container">
+                                    {% if p[4] and p[4] != "" %}
+                                        <img src="{{ p[4] }}" alt="{{ p[1] }}">
+                                    {% else %}
+                                        <span style="color: var(--text-muted); font-size: 12px;">Sin imagen</span>
+                                    {% endif %}
+                                </div>
+                            </a>
 
-                            <h3>{{ p[1] }}</h3>
+                            <!-- Enlace en el título para abrir la descripción -->
+                            <h3>
+                                <a href="/producto/{{ p[0] }}" style="text-decoration: none; color: var(--text-main);">
+                                    {{ p[1] }}
+                                </a>
+                            </h3>
+
                             <div class="product-price">Q{{ "%.2f"|format(p[2]) }}</div>
                             <div class="product-stock">Stock: <span id="stock-max-{{ loop.index }}">{{ p[3] }}</span> disponibles</div>
                             
