@@ -272,6 +272,36 @@
         .close-btn { position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
         
         .cart-badge { background: var(--turquesa-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; font-weight: bold; margin-left: 5px; }
+
+        /* ANIMACIÓN FLOTANTE (TOAST) DE CARRITO */
+        #toast-carrito {
+            visibility: hidden;
+            min-width: 260px;
+            background-color: #111111;
+            color: #fff;
+            text-align: center;
+            border-radius: 30px;
+            padding: 14px 20px;
+            position: fixed;
+            z-index: 10500;
+            right: 30px;
+            bottom: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 2px solid var(--turquesa-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+        }
+        #toast-carrito.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -491,6 +521,12 @@
         </div>
     </div>
 
+    <!-- NOTIFICACIÓN FLOTANTE ANIMADA -->
+    <div id="toast-carrito">
+        <span style="font-size: 20px;">📦🛒</span>
+        <span id="toast-mensaje">¡Producto agregado con éxito!</span>
+    </div>
+
     <!-- SCRIPT DE CARRITO Y MODALES -->
     <script>
         let carrito = JSON.parse(localStorage.getItem("carrito_libreria")) || [];
@@ -524,6 +560,19 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
+        function mostrarNotificacion(nombreProducto) {
+            let toast = document.getElementById("toast-carrito");
+            let mensaje = document.getElementById("toast-mensaje");
+            if(!toast) return;
+
+            mensaje.innerHTML = `<strong>${nombreProducto}</strong> se agregó al carrito`;
+            toast.className = "show";
+
+            setTimeout(function(){ 
+                toast.className = toast.className.replace("show", ""); 
+            }, 3000);
+        }
+
         function cambiarCantidadLocal(idIndex, delta) {
             let input = document.getElementById("qty-" + idIndex);
             if (!input) return;
@@ -554,7 +603,7 @@
                 carrito.push({ nombre: nombre, precio: precio, cantidad: cantidadPedida, stockMax: stockMax });
             }
             guardarYActualizarCarrito();
-            alert("¡Producto agregado al carrito!");
+            mostrarNotificacion(nombre);
         }
 
         function cambiarCantidadItem(index, delta) {
