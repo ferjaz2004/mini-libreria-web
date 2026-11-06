@@ -3,172 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ producto[1] }} - Librería Jireh</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome para iconos -->
+    <title>{{ producto[1] }} - Librería Jireh Alotenango</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
+            --primary-color: #111111;
             --turquesa-color: #00bcd4;
             --turquesa-hover: #00acc1;
+            --bg-light: #f9f9f9;
+            --border-color: #e5e5e5;
+            --text-main: #222222;
+            --text-muted: #717171;
         }
-        /* Estilos para la sección de sugeridos estilo Shein */
-        .suggestions-container {
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-light); 
+            margin: 0; 
+            padding: 0; 
+            color: var(--text-main); 
+        }
+
+        /* BARRA SUPERIOR Y NAVBAR */
+        .top-bar { background-color: #000; color: #fff; text-align: center; font-size: 12px; padding: 8px 10px; font-weight: 500; }
+        .navbar { background-color: #ffffff; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+        .navbar h2 { margin: 0; font-size: 22px; font-weight: 700; }
+        .navbar h2 a { color: var(--primary-color); text-decoration: none; }
+        
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 14px; }
+        .nav-links a:hover { color: var(--turquesa-color); }
+
+        .cart-nav-btn {
+            background-color: #f1f1f1;
+            color: var(--text-main);
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
             display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            scroll-behavior: smooth;
-        }
-        .suggestions-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .suggestions-container::-webkit-scrollbar-thumb {
-            background-color: #ccc;
-            border-radius: 10px;
-        }
-        .suggestion-card {
-            min-width: 180px;
-            max-width: 180px;
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 10px;
-            padding: 10px;
-            text-align: left;
-            transition: transform 0.2s, box-shadow 0.2s;
-            flex-shrink: 0;
-        }
-        .suggestion-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .suggestion-img {
-            width: 100%;
-            height: 140px;
-            object-fit: contain;
-            background: #f8f8f8;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-        .suggestion-title {
-            font-size: 13px;
+            align-items: center;
+            gap: 8px;
             font-weight: 600;
-            color: #222;
-            height: 35px;
+            transition: background-color 0.2s ease, color 0.2s;
+        }
+        .cart-nav-btn:hover { background-color: var(--turquesa-color); color: white; }
+        .cart-nav-btn:hover .cart-badge { background-color: white; color: var(--turquesa-color); }
+
+        /* DETALLE DE PRODUCTO (FOTO IZQUIERDA / INFO DERECHA) */
+        .product-detail-container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .product-detail-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            display: flex;
+            gap: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .product-image-box {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f8f8;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
             overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            margin-bottom: 5px;
-            text-decoration: none;
+            border: 1px solid #eee;
         }
-        .suggestion-price {
-            color: var(--turquesa-color);
-            font-weight: 700;
-            font-size: 15px;
+        .product-image-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .product-info-box {
+            flex: 1.2;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
         }
+        .category-badge { display: inline-block; background: #eee; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 10px; width: fit-content; }
+        .product-title { font-size: 26px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; }
+        .product-price { font-size: 24px; font-weight: 700; color: var(--turquesa-color); margin-bottom: 15px; }
+        .product-stock { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+        .description-section { margin-top: 15px; margin-bottom: 25px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 15px 0; }
+        .description-section h5 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+        .description-section p { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0; white-space: pre-line; }
+
+        /* CONTROLES DE CANTIDAD Y COMPRA */
+        .purchase-actions { display: flex; flex-direction: column; gap: 15px; }
+        .qty-row { display: flex; align-items: center; gap: 10px; }
+        .qty-control { display: flex; align-items: center; gap: 5px; }
+        .qty-control button { background: #f1f1f1; border: none; padding: 8px 14px; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 14px; }
+        .qty-control input { width: 55px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; padding: 7px; font-size: 14px; font-weight: 600; }
+        
+        .btn-comprar { 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%; 
+            font-size: 15px; 
+            transition: background 0.2s;
+        }
+        .btn-comprar:hover { background-color: var(--turquesa-color); }
+
+        /* SECCIÓN ESTILO SHEIN: SUGERIDOS */
+        .suggestions-section { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .suggestions-section h4 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+        .suggestions-container { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px; }
+        .suggestion-card { min-width: 200px; max-width: 200px; background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: left; transition: transform 0.2s; }
+        .suggestion-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .suggestion-img { width: 100%; height: 150px; object-fit: contain; background: #f8f8f8; border-radius: 8px; margin-bottom: 10px; }
+        .suggestion-title { font-size: 13px; font-weight: 600; color: var(--text-main); height: 35px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-decoration: none; margin-bottom: 5px; }
+        .suggestion-price { color: var(--turquesa-color); font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+
+        /* MODAL DEL CARRITO */
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-btn { position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .client-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 14px; }
+        .btn-whatsapp { background-color: #25d366; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 15px; }
+        .cart-badge { background: var(--turquesa-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; font-weight: bold; margin-left: 5px; }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <!-- Barra de Navegación Superior -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="fa-solid fa-book-open me-2"></i>Librería Jireh</a>
-            <div class="d-flex align-items-center">
-                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-arrow-left me-1"></i> Volver al Catálogo</a>
-                {% if cliente_actual %}
-                    <a href="/puntos-pepel-tinta" class="btn btn-warning btn-sm text-dark fw-bold"><i class="fa-solid fa-star me-1"></i> Puntos Pepel & Tinta</a>
-                {% else %}
-                    <a href="/login" class="btn btn-outline-warning btn-sm">Iniciar Sesión</a>
-                {% endif %}
-            </div>
+    <!-- NAVBAR -->
+    <div class="top-bar">🚚 ¡Envíos disponibles y acumula puntos con cada compra en Librería Jireh Alotenango! ✨</div>
+    <div class="navbar">
+        <h2><a href="/">📚 Librería Jireh Alotenango</a></h2>
+        <div class="nav-links">
+            <a href="/tramites-en-linea">Trámites en Línea</a>
+            <a href="/rastreo">Rastreo</a>
+            <button type="button" class="cart-nav-btn" onclick="abrirModal('modal-carrito')">
+                🛒 Carrito <span id="cart-counter" class="cart-badge">0</span>
+            </button>
+            <a href="/" class="btn btn-outline-dark btn-sm">Volver al Catálogo</a>
         </div>
-    </nav>
-
-    <!-- Contenido Detallado del Producto -->
-    <div class="container my-5">
-        <div class="row card shadow border-0 p-4 bg-white rounded-4">
-            
-            <!-- Columna de la Imagen -->
-            <div class="col-md-5 text-center mb-4 mb-md-0">
-                {% if producto[4] %}
-                    <img src="{{ producto[4] }}" alt="{{ producto[1] }}" class="img-fluid rounded-3 shadow-sm" style="max-height: 400px; object-fit: contain;">
-                {% else %}
-                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded-3 shadow-sm" style="height: 350px;">
-                        <i class="fa-solid fa-image fa-4x"></i>
-                    </div>
-                {% endif %}
-            </div>
-
-            <!-- Columna de la Información del Producto -->
-            <div class="col-md-7 d-flex flex-column justify-content-between">
-                <div>
-                    <span class="badge bg-secondary mb-2 text-uppercase">{{ producto[5] }}</span>
-                    <h1 class="fw-bold text-dark mb-3">{{ producto[1] }}</h1>
-                    <h3 class="text-primary fw-bold mb-3">Q {{ "%.2f"|format(producto[2]) }}</h3>
-                    
-                    <p class="text-muted mb-4">
-                        {% if producto[3] > 0 %}
-                            <span class="badge bg-success">¡Disponible! ({{ producto[3] }} unidades en stock)</span>
-                        {% else %}
-                            <span class="badge bg-danger">Agotado temporalmente</span>
-                        {% endif %}
-                    </p>
-
-                    <hr class="text-muted">
-
-                    <h5 class="fw-bold text-dark mt-4">Descripción del Producto:</h5>
-                    <p class="text-secondary" style="line-height: 1.6; white-space: pre-line;">
-                        {{ producto[6] }}
-                    </p>
-                </div>
-
-                <!-- Botones de Acción -->
-                <div class="mt-4 pt-3 border-top">
-                    {% if producto[3] > 0 %}
-                        <a href="/" class="btn btn-success btn-lg w-100 shadow-sm text-decoration-none text-white text-center">
-                            <i class="fa-solid fa-cart-shopping me-2"></i> Ir al Catálogo para Agregar al Carrito
-                        </a>
-                    {% else %}
-                        <button class="btn btn-secondary btn-lg w-100" disabled>
-                            Producto No Disponible
-                        </button>
-                    {% endif %}
-                </div>
-
-            </div>
-        </div>
-
-        <!-- SECCIÓN ESTILO SHEIN: LOS CLIENTES TAMBIÉN VIERON / RECOMENDADOS -->
-        {% if productos_sugeridos %}
-        <div class="mt-5">
-            <h4 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-fire text-warning me-2"></i> Los clientes también vieron</h4>
-            <div class="suggestions-container py-2">
-                {% for sug in productos_sugeridos %}
-                    <div class="suggestion-card shadow-sm">
-                        <a href="/producto/{{ sug[0] }}">
-                            {% if sug[3] %}
-                                <img src="{{ sug[3] }}" alt="{{ sug[1] }}" class="suggestion-img">
-                            {% else %}
-                                <div class="suggestion-img d-flex align-items-center justify-content-center text-muted">
-                                    <i class="fa-solid fa-image"></i>
-                                </div>
-                            {% endif %}
-                        </a>
-                        <a href="/producto/{{ sug[0] }}" class="suggestion-title">{{ sug[1] }}</a>
-                        <div class="suggestion-price">Q{{ "%.2f"|format(sug[2]) }}</div>
-                        <a href="/producto/{{ sug[0] }}" class="btn btn-outline-dark btn-sm w-100 mt-2" style="font-size: 12px;">Ver detalles</a>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- CONTENIDO PRINCIPAL DEL PRODUCTO -->
+    <div class="product-detail-container">
+        <div class="product-detail-card">
+            
+            <!-- FOTO A LA IZQUIERDA -->
+            <div class="product-image-box">
+                {% if producto[4] %}
+                    <img src="{{ producto[4] }}" alt="{{ producto[1] }}">
+                {% else %}
+                    <span style="color: var(--text-muted);">Sin imagen</span>
+                {% endif %}
+            </div>
+
+            <!-- INFORMACIÓN Y DESCRIPCIÓN A LA DERECHA -->
+            <div class="product-info-box">
+                <span class="category-badge">{{ producto[5] }}</span>
+                <h1 class="product-title">{{ producto[1] }}</h1>
+                <div class="product-price">Q{{ "%.2f"|format(producto[2]) }}</div>
+                <div class="product-stock">Stock: <span id="stock-max-det">{{ producto[3] }}</span> disponibles</div>
+
+                <div class="description-section">
+                    <h5>Descripción del Producto:</h5>
+                    <p>{{ producto[6] }}</p>
+                </div>
+
+                <!-- CONTROLES DE COMPRA DIRECTOS -->
+                {% if producto[3] > 0 %}
+                <div class="purchase-actions">
+                    <div class="qty-row">
+                        <label style="font-weight: 600; font-size: 13px;">Cantidad:</label>
+                        <div class="qty-control">
+                            <button type="button" onclick="cambiarCantidadDetalle(-1)">-</button>
+                            <input type="number" id="qty-detalles" value="1" min="1" max="{{ producto[3] }}">
+                            <button type="button" onclick="cambiarCantidadDetalle(1)">+</button>
+                        </div>
+                    </div>
+                    <button class="btn-comprar" onclick="agregarAlCarritoDesdeDetalle('{{ producto[1] }}', {{ producto[2] }}, {{ producto[3] }})">
+                        🛒 Agregar al Carrito
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-danger p-2 text-center" style="font-size: 14px; background: #fee2e2; color: #991b1b; border-radius: 8px;">
+                    Agotado temporalmente
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE RECOMENDADOS ESTILO SHEIN -->
+    {% if productos_sugeridos %}
+    <div class="suggestions-section">
+        <h4>🔥 Los clientes también vieron</h4>
+        <div class="suggestions-container">
+            {% for sug in productos_sugeridos %}
+                <div class="suggestion-card">
+                    <a href="/producto/{{ sug[0] }}">
+                        {% if sug[3] %}
+                            <img src="{{ sug[3] }}" alt="{{ sug[1] }}" class="suggestion-img">
+                        {% else %}
+                            <div class="suggestion-img d-flex align-items-center justify-content-center text-muted">Sin imagen</div>
+                        {% endif %}
+                    </a>
+                    <a href="/producto/{{ sug[0] }}" class="suggestion-title">{{ sug[1] }}</a>
+                    <div class="suggestion-price">Q{{ "%.2f"|format(sug[2]) }}</div>
+                    <a href="/producto/{{ sug[0] }}" class="btn-comprar" style="padding: 6px; font-size: 12px; text-align: center; text-decoration: none; display: block;">Ver detalles</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- MODAL DEL CARRITO -->
+    <div id="modal-carrito" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal('modal-carrito')">&times;</span>
+            <h3 style="margin-top:0;">🛍️ Tu Carrito de Compras</h3>
+            <ul id="lista-carrito" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto;">
+                <li>El carrito está vacío.</li>
+            </ul>
+            <div style="margin-top: 15px;">
+                <label style="font-size: 13px; font-weight: 600;">Tu Nombre:</label>
+                <input type="text" id="input-nombre" class="client-input" placeholder="Nombre completo..." value="{% if cliente_actual %}{{ cliente_actual.nombre }}{% endif %}">
+            </div>
+            <h3 style="display: flex; justify-content: space-between;"><span>Total:</span> <span style="color: var(--turquesa-color);">Q<span id="total-carrito">0.00</span></span></h3>
+            <button id="btn-enviar-pedido" class="btn-whatsapp" onclick="enviarPedidoWhatsApp()" style="display:none; margin-top: 10px;">🛒 Generar Pedido y Pagar</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE CARRITO Y DETALLES -->
+    <script>
+        let carrito = JSON.parse(localStorage.getItem("carrito_libreria")) || [];
+        actualizarCarrito();
+
+        function abrirModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function cerrarModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function cambiarCantidadDetalle(delta) {
+            let input = document.getElementById("qty-detalles");
+            let val = parseInt(input.value) || 1;
+            let max = parseInt(input.max) || 999;
+            val += delta;
+            if (val < 1) val = 1;
+            if (val > max) val = max;
+            input.value = val;
+        }
+
+        function agregarAlCarritoDesdeDetalle(nombre, precio, stockMax) {
+            let inputElem = document.getElementById("qty-detalles");
+            let cantidadPedida = inputElem ? (parseInt(inputElem.value) || 1) : 1;
+            
+            let item = carrito.find(i => i.nombre === nombre);
+            if (item) {
+                let nuevaCantidad = item.cantidad + cantidadPedida;
+                if (nuevaCantidad > stockMax) nuevaCantidad = stockMax;
+                item.cantidad = nuevaCantidad;
+            } else {
+                carrito.push({ nombre: nombre, precio: precio, cantidad: cantidadPedida, stockMax: stockMax });
+            }
+            guardarYActualizarCarrito();
+            alert("¡Producto agregado al carrito!");
+        }
+
+        function cambiarCantidadItem(index, delta) {
+            carrito[index].cantidad += delta;
+            if (carrito[index].cantidad <= 0) {
+                carrito.splice(index, 1);
+            } else if (carrito[index].cantidad > carrito[index].stockMax) {
+                carrito[index].cantidad = carrito[index].stockMax;
+            }
+            guardarYActualizarCarrito();
+        }
+
+        function eliminarItemCarrito(index) {
+            carrito.splice(index, 1);
+            guardarYActualizarCarrito();
+        }
+
+        function guardarYActualizarCarrito() {
+            localStorage.setItem("carrito_libreria", JSON.stringify(carrito));
+            actualizarCarrito();
+        }
+
+        function actualizarCarrito() {
+            let lista = document.getElementById("lista-carrito");
+            let spanTotal = document.getElementById("total-carrito");
+            let btn = document.getElementById("btn-enviar-pedido");
+            let badge = document.getElementById("cart-counter");
+            if (!lista) return;
+
+            lista.innerHTML = "";
+            let total = 0;
+            let totalItems = 0;
+
+            if (carrito.length === 0) {
+                lista.innerHTML = "<li>El carrito está vacío.</li>";
+                if(spanTotal) spanTotal.innerText = "0.00";
+                if(btn) btn.style.display = "none";
+                if(badge) badge.innerText = "0";
+                return;
+            }
+
+            carrito.forEach((i, index) => {
+                let sub = i.precio * i.cantidad;
+                total += sub;
+                totalItems += i.cantidad;
+                let li = document.createElement("li");
+                li.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid #eee; padding-bottom: 6px;";
+                li.innerHTML = `
+                    <span>${i.nombre} (Q${i.precio.toFixed(2)})</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <button type="button" onclick="cambiarCantidadItem(${index}, -1)">-</button>
+                        <span>${i.cantidad}</span>
+                        <button type="button" onclick="cambiarCantidadItem(${index}, 1)">+</button>
+                        <button type="button" onclick="eliminarItemCarrito(${index})" style="background: #ef4444; color:white; border:none; padding: 2px 6px; border-radius:3px; cursor:pointer;">✕</button>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+
+            if(spanTotal) spanTotal.innerText = total.toFixed(2);
+            if(btn) btn.style.display = "block";
+            if(badge) badge.innerText = totalItems;
+        }
+
+        function enviarPedidoWhatsApp() {
+            let nombre = document.getElementById("input-nombre").value.trim();
+            if (!nombre) {
+                alert("Por favor ingresa tu nombre.");
+                return;
+            }
+            let total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+
+            let form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/crear-pedido";
+
+            let inputN = document.createElement("input");
+            inputN.type = "hidden";
+            inputN.name = "nombre";
+            inputN.value = nombre;
+            form.appendChild(inputN);
+
+            let inputT = document.createElement("input");
+            inputT.type = "hidden";
+            inputT.name = "total_pedido";
+            inputT.value = total.toFixed(2);
+            form.appendChild(inputT);
+
+            let inputCarrito = document.createElement("input");
+            inputCarrito.type = "hidden";
+            inputCarrito.name = "carrito_productos";
+            inputCarrito.value = JSON.stringify(carrito);
+            form.appendChild(inputCarrito);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
 </body>
 </html>
