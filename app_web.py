@@ -57,7 +57,7 @@ def obtener_productos_db(categoria_filtro=None):
   Consulta la tabla 'inventario' en Supabase y aplica un filtrado robusto
   totalmente inmune a tildes, mayúsculas, espacios y caracteres especiales de URL.
   """
-  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria&order=id.asc"
+  url = f"{SUPABASE_URL}/rest/v1/inventario?select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria,descripcion&order=id.asc"
   headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
   
   try:
@@ -84,6 +84,7 @@ def obtener_productos_db(categoria_filtro=None):
                 int(p.get("stock", 0)),
                 str(p.get("imagen_url", "") or ""),
                 cat_db_original,
+                str(p.get("descripcion", "") or ""),
             ))
       return productos_visibles
   except Exception as e:
@@ -142,6 +143,38 @@ def ver_categoria(nombre_categoria):
     )
   except Exception as e:
     return f"Error al cargar la categoría: {e}"
+    @app.route("/producto/<int:producto_id>")
+def detalle_producto(producto_id):
+  """
+  Muestra la vista detallada e individual de un producto seleccionado.
+  """
+  try:
+    url = f"{SUPABASE_URL}/rest/v1/inventario?id=eq.{producto_id}&select=id,nombre,precio_venta,stock,visible_web,imagen_url,categoria,descripcion"
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    resp = requests.get(url, headers=headers)
+
+    if resp.status_code == 200:
+      data = resp.json()
+      if data:
+        p = data[0]
+        producto = (
+            p.get("id"),
+            p.get("nombre"),
+            float(p.get("precio_venta", 0.0)),
+            int(p.get("stock", 0)),
+            str(p.get("imagen_url", "") or ""),
+            str(p.get("categoria", "General")),
+            str(p.get("descripcion", "") or "Este producto aún no cuenta con una descripción detallada."),
+        )
+        cliente_actual = session.get("cliente_puntos")
+        return render_template(
+            "producto.html",
+            producto=producto,
+            cliente_actual=cliente_actual,
+        )
+    return "<h3>Producto no encontrado</h3><p>El producto que buscas no existe o ya no está disponible.</p><a href='/'>Regresar a la tienda</a>", 404
+  except Exception as e:
+    return f"Error al cargar el producto: {e}"
 
 
 @app.route("/terminos")
