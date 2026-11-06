@@ -50,7 +50,7 @@ def normalizar_texto(texto):
 
 
 # =========================================================================
-# FUNCIÓN DE PRODUCTOS (SOLUCIÓN DEFINITIVA DE FILTRADO)
+# FUNCIÓN DE PRODUCTOS (INCLUYE DESCRIPCIÓN)
 # =========================================================================
 def obtener_productos_db(categoria_filtro=None):
   """
@@ -143,7 +143,9 @@ def ver_categoria(nombre_categoria):
     )
   except Exception as e:
     return f"Error al cargar la categoría: {e}"
-    @app.route("/producto/<int:producto_id>")
+
+
+@app.route("/producto/<int:producto_id>")
 def detalle_producto(producto_id):
   """
   Muestra la vista detallada e individual de un producto seleccionado.
